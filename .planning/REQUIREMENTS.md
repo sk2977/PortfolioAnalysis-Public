@@ -35,8 +35,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Cowork Compatibility
 
-- [ ] **COWK-01**: All scripts execute successfully in Claude Cowork Python environment
-- [ ] **COWK-02**: Requirements.txt updated: +openpyxl, +pydantic; -python-dotenv
+- [x] **COWK-01**: All scripts execute successfully in Claude Cowork Python environment
+- [x] **COWK-02**: Requirements.txt updated: +openpyxl, +pydantic; -python-dotenv
 - [ ] **COWK-03**: README updated with Cowork setup instructions (clone, link, upload portfolio)
 
 ## v2 Requirements
@@ -75,8 +75,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-01 | Phase 1 | Complete |
 | STAB-02 | Phase 1 | Complete |
 | STAB-03 | Phase 1 | Complete |
-| COWK-01 | Phase 1 | Pending |
-| COWK-02 | Phase 1 | Pending |
+| COWK-01 | Phase 1 | Complete |
+| COWK-02 | Phase 1 | Complete |
 | INPT-01 | Phase 2 | Pending |
 | INPT-02 | Phase 2 | Pending |
 | INPT-03 | Phase 2 | Pending |

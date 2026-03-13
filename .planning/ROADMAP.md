@@ -12,7 +12,7 @@ This milestone transforms a working but fragile pipeline into a polished, Cowork
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Stability and Cowork Hardening** - Fix pre-existing bugs and guarantee clean execution in Cowork
+- [x] **Phase 1: Stability and Cowork Hardening** - Fix pre-existing bugs and guarantee clean execution in Cowork (completed 2026-03-13)
 - [ ] **Phase 2: Input Expansion** - Add Excel upload support, include-list, and custom benchmark
 - [ ] **Phase 3: Structured Output Schema Layer** - Define Pydantic schemas and wire validation into pipeline
 - [ ] **Phase 4: Qualitative Narrative Layer** - Wire Claude's in-conversation LLM generation into the report
@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Chart generation completes without RuntimeError in a headless environment (no display attached)
   4. A new Cowork user can run a preflight check that confirms all required packages are importable before starting the workflow
   5. requirements.txt installs openpyxl and pydantic while python-dotenv has been removed
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 01-01-PLAN.md -- Test scaffold and stability fixes (STAB-01, STAB-02, STAB-03)
@@ -75,7 +75,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stability and Cowork Hardening | 1/2 | In Progress|  |
+| 1. Stability and Cowork Hardening | 2/2 | Complete   | 2026-03-13 |
 | 2. Input Expansion | 0/TBD | Not started | - |
 | 3. Structured Output Schema Layer | 0/TBD | Not started | - |
 | 4. Qualitative Narrative Layer | 0/TBD | Not started | - |
