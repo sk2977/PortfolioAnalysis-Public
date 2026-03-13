@@ -9,9 +9,9 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Stability
 
-- [ ] **STAB-01**: Deprecated pandas `reindex(..., method='ffill')` replaced with `.reindex(...).ffill()` across all modules
-- [ ] **STAB-02**: Silent `except Exception: pass` in cache operations replaced with logged warnings
-- [ ] **STAB-03**: matplotlib Agg backend explicitly set before any pyplot imports for headless Cowork execution
+- [x] **STAB-01**: Deprecated pandas `reindex(..., method='ffill')` replaced with `.reindex(...).ffill()` across all modules
+- [x] **STAB-02**: Silent `except Exception: pass` in cache operations replaced with logged warnings
+- [x] **STAB-03**: matplotlib Agg backend explicitly set before any pyplot imports for headless Cowork execution
 
 ### Input
 
@@ -72,9 +72,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STAB-01 | Phase 1 | Pending |
-| STAB-02 | Phase 1 | Pending |
-| STAB-03 | Phase 1 | Pending |
+| STAB-01 | Phase 1 | Complete |
+| STAB-02 | Phase 1 | Complete |
+| STAB-03 | Phase 1 | Complete |
 | COWK-01 | Phase 1 | Pending |
 | COWK-02 | Phase 1 | Pending |
 | INPT-01 | Phase 2 | Pending |
