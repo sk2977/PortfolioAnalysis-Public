@@ -29,7 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Chart generation completes without RuntimeError in a headless environment (no display attached)
   4. A new Cowork user can run a preflight check that confirms all required packages are importable before starting the workflow
   5. requirements.txt installs openpyxl and pydantic while python-dotenv has been removed
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md -- Test scaffold and stability fixes (STAB-01, STAB-02, STAB-03)
+- [ ] 01-02-PLAN.md -- Preflight check and requirements.txt update (COWK-01, COWK-02)
 
 ### Phase 2: Input Expansion
 **Goal**: Users can upload any standard broker file and control which tickers enter the optimization
@@ -71,7 +75,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stability and Cowork Hardening | 0/TBD | Not started | - |
+| 1. Stability and Cowork Hardening | 0/2 | Planning | - |
 | 2. Input Expansion | 0/TBD | Not started | - |
 | 3. Structured Output Schema Layer | 0/TBD | Not started | - |
 | 4. Qualitative Narrative Layer | 0/TBD | Not started | - |
