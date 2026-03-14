@@ -9,6 +9,7 @@ Parses portfolio holdings from CSV files in multiple formats:
 Returns normalized portfolio data for optimization.
 """
 
+import os
 import pandas as pd
 import numpy as np
 import re
@@ -77,21 +78,57 @@ def _detect_format(df, file_path):
     return 'generic'
 
 
-def _parse_generic(file_path, exclude_tickers):
+def _detect_format_from_df(df):
     """
-    Parse generic CSV with columns like:
-    - Symbol, Shares, Price
-    - Symbol, Weight%
-    - Ticker, Shares
-    - Symbol, Allocation
-    """
-    df = pd.read_csv(file_path, dtype=str, encoding='utf-8')
-    df.columns = [c.strip() for c in df.columns]
+    Detect broker format from a DataFrame's column names.
+    Unlike _detect_format(), this does not open any files.
 
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with column names already stripped.
+
+    Returns
+    -------
+    str
+        One of: 'etrade', 'schwab', 'generic'
+    """
+    cols_lower = [c.strip().lower() for c in df.columns]
+
+    # E-Trade signal: any column containing '% of portfolio'
+    if any('% of portfolio' in c for c in cols_lower):
+        return 'etrade'
+
+    # Schwab signal: has both 'description' and 'market value'
+    if 'description' in cols_lower and 'market value' in cols_lower:
+        return 'schwab'
+
+    return 'generic'
+
+
+def _parse_generic_df(df, exclude_tickers, format_label='generic'):
+    """
+    Parse a generic-format DataFrame into a portfolio dict.
+    Shared logic for both CSV and Excel generic parsing.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with columns already stripped.
+    exclude_tickers : list
+        Tickers to exclude.
+    format_label : str
+        Value to set in 'format_detected' field of returned dict.
+
+    Returns
+    -------
+    dict
+        Standard portfolio dict.
+    """
     # Find symbol column
     symbol_col = _find_column(df, ['symbol', 'ticker', 'stock', 'name'])
     if symbol_col is None:
-        raise ValueError("Cannot find symbol/ticker column in CSV. "
+        raise ValueError("Cannot find symbol/ticker column. "
                          "Expected column named: Symbol, Ticker, or Stock")
 
     # Find quantity or weight column
@@ -131,7 +168,7 @@ def _parse_generic(file_path, exclude_tickers):
                     price = float(str(row[price_col]).replace('$', '').replace(',', ''))
                     val = shares * price
                 else:
-                    val = shares  # Will use share count as proxy
+                    val = shares  # Use share count as proxy
                 if val > 0:
                     tickers.append(symbol)
                     values.append(val)
@@ -139,12 +176,11 @@ def _parse_generic(file_path, exclude_tickers):
                 continue
 
     if not tickers:
-        raise ValueError("No valid tickers found in CSV!")
+        raise ValueError("No valid tickers found!")
 
     # Normalize to weights summing to 1.0
     total = sum(values)
     allocations = pd.Series([v / total for v in values], index=tickers)
-
     raw_data = pd.DataFrame({'ticker': tickers, 'allocation': allocations.values})
 
     print(f"  Loaded {len(tickers)} securities: {', '.join(tickers)}")
@@ -153,8 +189,87 @@ def _parse_generic(file_path, exclude_tickers):
         'tickers': tickers,
         'allocations': allocations,
         'raw_data': raw_data,
-        'format_detected': 'generic'
+        'format_detected': format_label
     }
+
+
+def _parse_schwab_df(df, exclude_tickers):
+    """
+    Parse a Schwab-format DataFrame into a portfolio dict.
+    Shared logic for both CSV and Excel Schwab parsing.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with columns already stripped.
+    exclude_tickers : list
+        Tickers to exclude.
+
+    Returns
+    -------
+    dict
+        Standard portfolio dict with format_detected='schwab'.
+    """
+    symbol_col = _find_column(df, ['symbol'])
+    qty_col = _find_column(df, ['quantity', 'shares'])
+    mv_col = _find_column(df, ['market value'])
+
+    if symbol_col is None:
+        raise ValueError("Cannot find Symbol column in Schwab data")
+
+    tickers = []
+    values = []
+
+    for _, row in df.iterrows():
+        symbol = str(row[symbol_col]).strip().upper()
+
+        if not symbol or symbol in ('NAN', '', 'CASH', 'TOTAL', 'ACCOUNT TOTAL'):
+            continue
+        if len(symbol) > 10 or _is_option(symbol):
+            continue
+        if symbol in [t.upper() for t in exclude_tickers]:
+            print(f"  User excluded: {symbol}")
+            continue
+
+        try:
+            if mv_col:
+                val = float(str(row[mv_col]).replace('$', '').replace(',', ''))
+            elif qty_col:
+                val = float(str(row[qty_col]).replace(',', ''))
+            else:
+                continue
+
+            if val > 0:
+                tickers.append(symbol)
+                values.append(val)
+        except (ValueError, TypeError):
+            continue
+
+    if not tickers:
+        raise ValueError("No valid tickers found in Schwab data!")
+
+    total = sum(values)
+    alloc_series = pd.Series([v / total for v in values], index=tickers)
+    raw_data = pd.DataFrame({'ticker': tickers, 'allocation': alloc_series.values})
+
+    print(f"  Loaded {len(tickers)} securities: {', '.join(tickers)}")
+
+    return {
+        'tickers': tickers,
+        'allocations': alloc_series,
+        'raw_data': raw_data,
+        'format_detected': 'schwab'
+    }
+
+
+def _parse_generic(file_path, exclude_tickers):
+    """
+    Parse generic CSV with columns like Symbol, Shares, Price or Symbol, Weight%.
+    Thin wrapper around _parse_generic_df().
+    """
+    df = pd.read_csv(file_path, dtype=str, encoding='utf-8')
+    df.columns = [c.strip() for c in df.columns]
+    return _parse_generic_df(df, exclude_tickers)
 
 
 def _parse_etrade(file_path, exclude_tickers):
@@ -217,60 +332,58 @@ def _parse_etrade(file_path, exclude_tickers):
 
 
 def _parse_schwab(file_path, exclude_tickers):
-    """Parse Schwab positions export format."""
+    """
+    Parse Schwab positions export format.
+    Thin wrapper around _parse_schwab_df().
+    """
     df = pd.read_csv(file_path, dtype=str, encoding='utf-8')
     df.columns = [c.strip() for c in df.columns]
+    return _parse_schwab_df(df, exclude_tickers)
 
-    symbol_col = _find_column(df, ['symbol'])
-    qty_col = _find_column(df, ['quantity', 'shares'])
-    mv_col = _find_column(df, ['market value'])
 
-    if symbol_col is None:
-        raise ValueError("Cannot find Symbol column in Schwab CSV")
+def parse_excel(file_path, exclude_tickers=None, sheet_name=0):
+    """
+    Parse portfolio from Excel (.xlsx) file. Auto-detects broker format.
 
-    tickers = []
-    values = []
+    Parameters
+    ----------
+    file_path : str
+        Path to .xlsx file.
+    exclude_tickers : list, optional
+        Tickers to exclude from analysis.
+    sheet_name : int or str, optional
+        Sheet to read (default 0 = first sheet).
 
-    for _, row in df.iterrows():
-        symbol = str(row[symbol_col]).strip().upper()
+    Returns
+    -------
+    dict
+        {
+            'tickers': list of str,
+            'allocations': pd.Series (index=ticker, values=weight 0-1),
+            'raw_data': pd.DataFrame,
+            'format_detected': str
+        }
 
-        if not symbol or symbol in ('NAN', '', 'CASH', 'TOTAL', 'ACCOUNT TOTAL'):
-            continue
-        if len(symbol) > 10 or _is_option(symbol):
-            continue
-        if symbol in [t.upper() for t in exclude_tickers]:
-            print(f"  User excluded: {symbol}")
-            continue
-
-        try:
-            if mv_col:
-                val = float(str(row[mv_col]).replace('$', '').replace(',', ''))
-            elif qty_col:
-                val = float(str(row[qty_col]).replace(',', ''))
-            else:
-                continue
-
-            if val > 0:
-                tickers.append(symbol)
-                values.append(val)
-        except (ValueError, TypeError):
-            continue
-
-    if not tickers:
-        raise ValueError("No valid tickers found in Schwab CSV!")
-
-    total = sum(values)
-    alloc_series = pd.Series([v / total for v in values], index=tickers)
-    raw_data = pd.DataFrame({'ticker': tickers, 'allocation': alloc_series.values})
-
-    print(f"  Loaded {len(tickers)} securities: {', '.join(tickers)}")
-
-    return {
-        'tickers': tickers,
-        'allocations': alloc_series,
-        'raw_data': raw_data,
-        'format_detected': 'schwab'
-    }
+    Raises
+    ------
+    FileNotFoundError
+        If file_path does not exist.
+    """
+    if exclude_tickers is None:
+        exclude_tickers = []
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Cannot find file: {file_path}")
+    df = pd.read_excel(file_path, sheet_name=sheet_name, dtype=str, engine='openpyxl')
+    df.columns = [str(c).strip() for c in df.columns]
+    fmt = _detect_format_from_df(df)
+    print(f"  Detected Excel format: {fmt}")
+    if fmt == 'etrade':
+        print("  [WARN] E-Trade Excel format not verified -- falling back to generic parser")
+        return _parse_generic_df(df, exclude_tickers, format_label='excel_etrade_fallback')
+    elif fmt == 'schwab':
+        return _parse_schwab_df(df, exclude_tickers)
+    else:
+        return _parse_generic_df(df, exclude_tickers, format_label='excel_generic')
 
 
 def validate_tickers(tickers):
