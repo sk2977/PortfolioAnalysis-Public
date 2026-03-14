@@ -74,7 +74,7 @@ Plans:
   3. When CAPM, Mean Historical, and EMA methods disagree materially, the report discloses the spread and labels it as lower confidence
   4. The report narrative includes a disclaimer that distinguishes educational analysis from investment advice
   5. README gives a new Cowork user step-by-step setup instructions (clone, link project, upload portfolio)
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 04-01-PLAN.md -- Tests and report.py narrative extensions (QUAL-01, QUAL-02, QUAL-03, QUAL-04)
@@ -90,4 +90,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Stability and Cowork Hardening | 2/2 | Complete   | 2026-03-13 |
 | 2. Input Expansion | 2/2 | Complete   | 2026-03-14 |
 | 3. Structured Output Schema Layer | 2/2 | Complete   | 2026-03-14 |
-| 4. Qualitative Narrative Layer | 0/2 | Not started | - |
+| 4. Qualitative Narrative Layer | 1/2 | In Progress|  |

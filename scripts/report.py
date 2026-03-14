@@ -63,7 +63,7 @@ def _compute_method_spread(returns_dict, threshold=0.05):
 def generate_report(optimization_results, macro_context, portfolio_info,
                     chart_paths=None, output_dir=OUTPUT_DIR,
                     macro_narrative=None, holding_commentary=None,
-                    method_spread_note=None):
+                    method_spread_note=None, returns_dict=None):
     """
     Generate a markdown report summarizing the analysis.
 
@@ -85,6 +85,11 @@ def generate_report(optimization_results, macro_context, portfolio_info,
         Mapping of ticker -> commentary sentence for material allocation changes.
     method_spread_note : str or None
         Confidence note for tickers with high expected return spread across methods.
+        If None and returns_dict is provided, a note is auto-computed via
+        _compute_method_spread().
+    returns_dict : dict or None
+        {'capm': pd.Series, 'mean': pd.Series, 'ema': pd.Series} -- used to
+        auto-compute method_spread_note when caller does not supply one.
 
     Returns
     -------
@@ -93,6 +98,19 @@ def generate_report(optimization_results, macro_context, portfolio_info,
     """
     if chart_paths is None:
         chart_paths = []
+
+    # Auto-compute method_spread_note from returns_dict if not explicitly provided
+    if method_spread_note is None and returns_dict is not None:
+        max_spread, flagged = _compute_method_spread(returns_dict)
+        if flagged:
+            ticker_list = ', '.join(
+                f"{t} ({s:.1%})" for t, s in flagged.items()
+            )
+            method_spread_note = (
+                f"Return estimate spread > 5pp for: {ticker_list}. "
+                f"Max spread: {max_spread:.1%}. "
+                f"Results may vary across estimation methods."
+            )
 
     now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
     config = optimization_results.get('config', {})

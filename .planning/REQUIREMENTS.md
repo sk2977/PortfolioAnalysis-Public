@@ -28,16 +28,16 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Qualitative Analysis
 
-- [ ] **QUAL-01**: Claude generates macro-regime narrative interpreting ERP, treasury yields, and P/E in plain language
-- [ ] **QUAL-02**: Claude generates per-holding commentary for material rebalancing actions (>5% weight change)
-- [ ] **QUAL-03**: Claude discloses method disagreement (CAPM vs Mean vs EMA spread) as confidence indicator
-- [ ] **QUAL-04**: Qualitative sections integrated into report output alongside mechanical tables
+- [x] **QUAL-01**: Claude generates macro-regime narrative interpreting ERP, treasury yields, and P/E in plain language
+- [x] **QUAL-02**: Claude generates per-holding commentary for material rebalancing actions (>5% weight change)
+- [x] **QUAL-03**: Claude discloses method disagreement (CAPM vs Mean vs EMA spread) as confidence indicator
+- [x] **QUAL-04**: Qualitative sections integrated into report output alongside mechanical tables
 
 ### Cowork Compatibility
 
 - [x] **COWK-01**: All scripts execute successfully in Claude Cowork Python environment
 - [x] **COWK-02**: Requirements.txt updated: +openpyxl, +pydantic; -python-dotenv
-- [ ] **COWK-03**: README updated with Cowork setup instructions (clone, link, upload portfolio)
+- [x] **COWK-03**: README updated with Cowork setup instructions (clone, link, upload portfolio)
 
 ## v2 Requirements
 
@@ -84,11 +84,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SOUT-02 | Phase 3 | Complete |
 | SOUT-03 | Phase 3 | Complete |
 | SOUT-04 | Phase 3 | Complete |
-| QUAL-01 | Phase 4 | Pending |
-| QUAL-02 | Phase 4 | Pending |
-| QUAL-03 | Phase 4 | Pending |
-| QUAL-04 | Phase 4 | Pending |
-| COWK-03 | Phase 4 | Pending |
+| QUAL-01 | Phase 4 | Complete |
+| QUAL-02 | Phase 4 | Complete |
+| QUAL-03 | Phase 4 | Complete |
+| QUAL-04 | Phase 4 | Complete |
+| COWK-03 | Phase 4 | Complete |
 
 **Coverage:**
 - v1 requirements: 17 total

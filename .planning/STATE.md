@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-03-14T00:47:55.165Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-03-14T01:04:44.343Z"
 last_activity: 2026-03-13 -- Roadmap created
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
   percent: 0
 ---
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P02 | 7 | 2 tasks | 3 files |
 | Phase 03-structured-output-schema-layer P01 | 2 | 1 tasks | 2 files |
 | Phase 03-structured-output-schema-layer P02 | 2 | 2 tasks | 2 files |
+| Phase 04-qualitative-narrative-layer P02 | 7 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 03-structured-output-schema-layer]: Use hasattr duck-typing in schemas.py to avoid importing numpy/pandas -- cleaner and more portable
 - [Phase 03-structured-output-schema-layer]: numpy NaN coerced to None via math.isnan() after .item() to ensure json.dumps() compliance in Optional[float] fields
 - [Phase 03-structured-output-schema-layer]: No new code added to schemas.py -- model_json_schema() and model_validate_json() are Pydantic v2 built-ins
+- [Phase 04-qualitative-narrative-layer]: Narrative kwargs default to None for backward compat -- no existing callers break
+- [Phase 04-qualitative-narrative-layer]: 5pp thresholds for holding commentary and method spread note -- abs(Difference) > 0.05 and spread > 0.05
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-14T00:45:00.859Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-03-14T01:04:44.333Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
