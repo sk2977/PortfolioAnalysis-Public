@@ -13,7 +13,7 @@ This milestone transforms a working but fragile pipeline into a polished, Cowork
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Stability and Cowork Hardening** - Fix pre-existing bugs and guarantee clean execution in Cowork (completed 2026-03-13)
-- [ ] **Phase 2: Input Expansion** - Add Excel upload support, include-list, and custom benchmark
+- [x] **Phase 2: Input Expansion** - Add Excel upload support, include-list, and custom benchmark (completed 2026-03-14)
 - [ ] **Phase 3: Structured Output Schema Layer** - Define Pydantic schemas and wire validation into pipeline
 - [ ] **Phase 4: Qualitative Narrative Layer** - Wire Claude's in-conversation LLM generation into the report
 
@@ -43,7 +43,7 @@ Plans:
   1. A user uploading a .xlsx brokerage export receives the same parsed holdings table as a CSV user
   2. A user can name specific tickers that must appear in the optimized portfolio (they are not zeroed out)
   3. A user can specify a benchmark ticker other than VTI and see that benchmark used in all comparison outputs
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 02-01-PLAN.md -- Excel parsing support and test scaffold (INPT-01)
@@ -80,6 +80,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stability and Cowork Hardening | 2/2 | Complete   | 2026-03-13 |
-| 2. Input Expansion | 0/2 | Not started | - |
+| 2. Input Expansion | 2/2 | Complete   | 2026-03-14 |
 | 3. Structured Output Schema Layer | 0/TBD | Not started | - |
 | 4. Qualitative Narrative Layer | 0/TBD | Not started | - |
