@@ -19,7 +19,7 @@ Portfolio optimization and US macro analysis tool powered by Claude. Provide you
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/PortfolioAnalysis-Public.git
+   git clone https://github.com/sk2977/PortfolioAnalysis-Public.git
    cd PortfolioAnalysis-Public
    ```
 

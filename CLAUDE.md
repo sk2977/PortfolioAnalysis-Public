@@ -1,10 +1,44 @@
-# PortfolioAnalysis - Claude Instructions
+# CLAUDE.md
 
-You are orchestrating a portfolio optimization and US macro analysis tool. Follow the workflow below step by step. The Python scripts in `scripts/` handle all computation -- you handle user interaction, data interpretation, and narrative.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Overview
+
+Portfolio optimization and US macro analysis tool. Claude orchestrates the pipeline -- Python scripts in `scripts/` handle computation; Claude handles user interaction, data interpretation, and narrative generation. No Anthropic API key needed.
+
+## Commands
+
+```bash
+# Setup
+python -m venv venv && source venv/Scripts/activate  # Windows (Git Bash)
+pip install -r requirements.txt
+
+# Run all tests
+python -m pytest tests/ -v
+
+# Run a single test file
+python -m pytest tests/test_stab.py -v
+
+# Run a specific test
+python -m pytest tests/test_stab.py::test_reindex_ffill -v
+```
+
+## Architecture
+
+**Claude-as-orchestrator pattern**: This is NOT a standalone CLI app. Claude reads CLAUDE.md, follows the phased workflow below, executes Python code blocks via tool use, and presents results conversationally. The scripts are libraries, not entry points.
+
+**Data flow**: CSV/text input -> `parse_portfolio` -> `market_data` (yfinance + pickle cache) -> `macro_analysis` (ERP/PE/yields) -> `optimize` (pyportfolioopt) -> `schemas` (Pydantic validation) -> Claude generates narratives -> `visualize` (matplotlib PNGs) -> `report` (markdown assembly)
+
+**Key design decisions**:
+- Three expected return methods (CAPM, Mean Historical, EMA) weighted 34/33/33 and optimized independently, then combined
+- Ledoit-Wolf covariance shrinkage for robustness
+- Pydantic schemas validate at integration points only ("wrap, don't rewrite" -- pipeline functions return plain dicts)
+- `data_cache/` stores pickle files with 4-hour TTL; `output/` stores charts and reports (both gitignored)
+- yfinance downloads use 3-second delays between tickers to avoid rate limiting
 
 ## Environment
 
-- Python 3.x with venv
+- Python 3.10+ with venv
 - Windows + Mac compatible
 - No Unicode emojis in console output -- use `[OK]`, `[ERROR]`, `[WARN]` etc.
 - All file I/O uses `encoding='utf-8'`
@@ -82,7 +116,16 @@ config['optimization_method'] = 'min_volatility'  # Override method
 
 Available optimization methods: `max_sharpe`, `min_volatility`, `max_quadratic_utility`
 
-After setting risk tolerance, ask two additional questions:
+After setting risk tolerance, ask about max allocation:
+
+> "Would you like to cap the maximum allocation per holding? (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom cap like 12%, 20%)"
+
+If user specifies a custom cap:
+```python
+config['max_weight'] = 0.20  # user's specified cap
+```
+
+Then ask two additional questions:
 
 > "Are there any tickers you want to guarantee appear in the optimized portfolio? (They will receive a minimum 1% allocation.)"
 
