@@ -202,13 +202,48 @@ if erp_chart:
     charts.append(erp_chart)
 ```
 
+### Phase 5.5: Qualitative Narrative
+
+Before calling generate_report(), generate three narrative strings. You (Claude) produce these by reading the structured data -- no API call needed.
+
+**1. Macro narrative (macro_narrative):**
+Read macro['erp'], macro['pe_ratio'], macro['treasury_yield'], and macro['interpretation'].
+Write 2-3 sentences interpreting the current macro regime in plain language.
+You MUST cite the actual ERP value and P/E ratio in your text.
+
+Example style:
+> "At a P/E of 27.4, the S&P 500 earnings yield is 3.6%, below the 10Y Treasury at 4.3%, producing an ERP of -0.7%. This negative premium suggests equities offer no compensation over risk-free bonds at current valuations."
+
+**2. Holding commentary (holding_commentary):**
+From results['comparison'], identify tickers where abs(Difference) > 0.05 (5 percentage points).
+For each, write one sentence explaining the direction and magnitude of the recommended change.
+Return as a dict: {"TICKER": "commentary sentence"}.
+Only include material changes -- skip tickers with smaller shifts.
+
+Do NOT use investment advice language ("you should buy/sell"). Use observational language ("the optimizer suggests increasing", "the model recommends reducing").
+
+**3. Method spread note (method_spread_note):**
+From results['returns_dict'], compare CAPM, mean historical, and EMA expected returns per ticker.
+If any ticker's spread (max - min across methods) exceeds 5 percentage points (0.05):
+
+Set method_spread_note to a string like:
+> "[TICKER]'s expected return ranges from X.X% (CAPM) to Y.Y% (EMA) -- a spread of Z.Zpp. Treat this ticker's recommendation as lower confidence."
+
+If multiple tickers exceed the threshold, mention each.
+If no ticker exceeds the threshold, set method_spread_note = None.
+
+Store all three as Python variables for the next step.
+
 ### Phase 6: Report
 
 Generate and present the report:
 
 ```python
 from scripts.report import generate_report
-report_md = generate_report(results, macro, portfolio, charts)
+report_md = generate_report(results, macro, portfolio, charts,
+                             macro_narrative=macro_narrative,
+                             holding_commentary=holding_commentary,
+                             method_spread_note=method_spread_note)
 print(report_md)
 ```
 
@@ -217,6 +252,7 @@ Present the key findings to the user in a clear narrative:
 2. Portfolio optimization results (current vs optimal)
 3. Top rebalancing actions
 4. Implementation priority
+5. Qualitative commentary (macro interpretation, holding notes, confidence indicators)
 
 ### Phase 7: Follow-up
 
