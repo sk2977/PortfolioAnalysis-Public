@@ -15,7 +15,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Input
 
-- [ ] **INPT-01**: User can upload Excel (.xlsx) files from any supported broker format
+- [x] **INPT-01**: User can upload Excel (.xlsx) files from any supported broker format
 - [x] **INPT-02**: User can specify tickers to include in optimization (forced floor weight via pyportfolioopt weight_bounds)
 - [x] **INPT-03**: User can choose a custom benchmark ticker (not hardcoded to VTI)
 
@@ -77,7 +77,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAB-03 | Phase 1 | Complete |
 | COWK-01 | Phase 1 | Complete |
 | COWK-02 | Phase 1 | Complete |
-| INPT-01 | Phase 2 | Pending |
+| INPT-01 | Phase 2 | Complete |
 | INPT-02 | Phase 2 | Complete |
 | INPT-03 | Phase 2 | Complete |
 | SOUT-01 | Phase 3 | Pending |
