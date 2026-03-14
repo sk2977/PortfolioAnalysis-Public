@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-14T00:28:18.329Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-14T00:41:49.781Z"
 last_activity: 2026-03-13 -- Roadmap created
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 6
+  completed_plans: 5
   percent: 0
 ---
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 4 | 2 tasks | 3 files |
 | Phase 02-input-expansion P01 | 7 | 2 tasks | 2 files |
 | Phase 02 P02 | 7 | 2 tasks | 3 files |
+| Phase 03-structured-output-schema-layer P01 | 2 | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Recent decisions affecting current work:
 - [Phase 02-input-expansion]: Use dtype=str on pd.read_excel() to prevent openpyxl numeric coercion in broker Excel exports
 - [Phase 02]: Use list(cov_matrix.index) as authoritative ticker order in _build_weight_bounds to avoid index mismatch with EfficientFrontier
 - [Phase 02-input-expansion]: DF-variant refactor: _parse_X_df() shares logic between CSV and Excel; file readers become thin wrappers
+- [Phase 03-structured-output-schema-layer]: Use hasattr duck-typing in schemas.py to avoid importing numpy/pandas -- cleaner and more portable
+- [Phase 03-structured-output-schema-layer]: numpy NaN coerced to None via math.isnan() after .item() to ensure json.dumps() compliance in Optional[float] fields
 
 ### Pending Todos
 
@@ -83,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-14T00:24:42.344Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-14T00:41:49.778Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None

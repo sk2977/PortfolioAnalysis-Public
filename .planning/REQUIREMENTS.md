@@ -21,8 +21,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Structured Outputs
 
-- [ ] **SOUT-01**: Pydantic v2 schema defined for portfolio analysis results (MacroContext, PortfolioRecommendation, AllocationComparison)
-- [ ] **SOUT-02**: Pipeline output dicts validated against Pydantic schemas with numpy/pandas type normalization
+- [x] **SOUT-01**: Pydantic v2 schema defined for portfolio analysis results (MacroContext, PortfolioRecommendation, AllocationComparison)
+- [x] **SOUT-02**: Pipeline output dicts validated against Pydantic schemas with numpy/pandas type normalization
 - [ ] **SOUT-03**: Claude produces structured JSON output block conforming to schema during Cowork sessions
 - [ ] **SOUT-04**: CLAUDE.md workflow updated with structured output instructions and schema references
 
@@ -80,8 +80,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INPT-01 | Phase 2 | Complete |
 | INPT-02 | Phase 2 | Complete |
 | INPT-03 | Phase 2 | Complete |
-| SOUT-01 | Phase 3 | Pending |
-| SOUT-02 | Phase 3 | Pending |
+| SOUT-01 | Phase 3 | Complete |
+| SOUT-02 | Phase 3 | Complete |
 | SOUT-03 | Phase 3 | Pending |
 | SOUT-04 | Phase 3 | Pending |
 | QUAL-01 | Phase 4 | Pending |
