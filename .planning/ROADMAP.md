@@ -43,7 +43,11 @@ Plans:
   1. A user uploading a .xlsx brokerage export receives the same parsed holdings table as a CSV user
   2. A user can name specific tickers that must appear in the optimized portfolio (they are not zeroed out)
   3. A user can specify a benchmark ticker other than VTI and see that benchmark used in all comparison outputs
-**Plans**: TBD
+**Plans:** 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md -- Excel parsing support and test scaffold (INPT-01)
+- [ ] 02-02-PLAN.md -- Include-list, custom benchmark, and CLAUDE.md workflow (INPT-02, INPT-03)
 
 ### Phase 3: Structured Output Schema Layer
 **Goal**: Pipeline outputs are validated against stable Pydantic schemas that Claude can reliably produce and consume as structured JSON
@@ -76,6 +80,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stability and Cowork Hardening | 2/2 | Complete   | 2026-03-13 |
-| 2. Input Expansion | 0/TBD | Not started | - |
+| 2. Input Expansion | 0/2 | Not started | - |
 | 3. Structured Output Schema Layer | 0/TBD | Not started | - |
 | 4. Qualitative Narrative Layer | 0/TBD | Not started | - |
