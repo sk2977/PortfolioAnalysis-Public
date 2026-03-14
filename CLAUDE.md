@@ -131,6 +131,49 @@ results = optimize_portfolio(
 )
 ```
 
+### Phase 4.5: Structured Validation
+
+After running macro analysis and optimization, validate outputs against Pydantic schemas. This normalizes numpy/pandas types to JSON-safe Python natives and catches structural mismatches early.
+
+**Code block 1 -- Validate macro context:**
+```python
+from scripts.schemas import MacroContext
+macro_validated = MacroContext.model_validate(macro)
+# macro_validated.pe_ratio is now a Python float (or None)
+# macro_validated.model_dump() is JSON-serializable
+```
+
+**Code block 2 -- Validate optimization results:**
+```python
+from scripts.schemas import AllocationComparison, PortfolioRecommendation, PerformanceMetrics
+comp_df = results['comparison']
+alloc_validated = AllocationComparison.model_validate({
+    'current': comp_df['Current'],
+    'optimal': comp_df['Optimal'],
+    'difference': comp_df['Difference'],
+})
+
+rec_validated = PortfolioRecommendation.model_validate({
+    'risk_tolerance': config['risk_tolerance'],
+    'optimization_method': config['optimization_method'],
+    'optimal_allocations': results['optimal_allocations'],
+    'performance_current': results['performance']['current'],
+    'performance_optimal': results['performance']['optimal'],
+})
+```
+
+**Code block 3 -- Generate structured output schema for Claude:**
+```python
+import json
+from scripts.schemas import PortfolioRecommendation
+schema = PortfolioRecommendation.model_json_schema()
+print(json.dumps(schema, indent=2))
+# Claude: produce a JSON block conforming to this schema, then validate:
+# validated = PortfolioRecommendation.model_validate_json(json_block)
+```
+
+Note on JSON fencing: If Claude's JSON block is wrapped in triple-backtick fencing, strip it first: `json_str = json_block.strip().removeprefix('```json').removesuffix('```').strip()`
+
 ### Phase 5: Visualization
 
 Generate all charts:
