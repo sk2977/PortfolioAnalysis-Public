@@ -196,3 +196,41 @@ def test_portfolio_recommendation_nested():
     # Default fields
     assert model.top_actions == []
     assert model.macro_summary == ""
+
+
+# ---------------------------------------------------------------------------
+# SOUT-03: JSON schema generation and validation
+# ---------------------------------------------------------------------------
+
+def test_schema_generable():
+    """model_json_schema() returns a valid JSON Schema dict with 'properties' key."""
+    from scripts.schemas import MacroContext, PortfolioRecommendation
+
+    pr_schema = PortfolioRecommendation.model_json_schema()
+    mc_schema = MacroContext.model_json_schema()
+
+    assert isinstance(pr_schema, dict), "PortfolioRecommendation schema must be a dict"
+    assert 'properties' in pr_schema, "PortfolioRecommendation schema must have 'properties' key"
+    assert 'risk_tolerance' in pr_schema['properties'], "PortfolioRecommendation schema must have 'risk_tolerance' in properties"
+
+    assert isinstance(mc_schema, dict), "MacroContext schema must be a dict"
+    assert 'properties' in mc_schema, "MacroContext schema must have 'properties' key"
+    assert 'pe_ratio' in mc_schema['properties'], "MacroContext schema must have 'pe_ratio' in properties"
+
+
+def test_validate_json_string():
+    """model_validate_json() accepts a plain JSON string conforming to PortfolioRecommendation schema."""
+    from scripts.schemas import PortfolioRecommendation
+
+    json_str = (
+        '{"risk_tolerance": "moderate", "optimization_method": "max_sharpe",'
+        ' "optimal_allocations": {"VTI": 0.5, "BND": 0.3, "QQQ": 0.2},'
+        ' "performance_current": {"annual_return": 0.08, "volatility": 0.15, "sharpe": 0.53},'
+        ' "performance_optimal": {"annual_return": 0.10, "volatility": 0.14, "sharpe": 0.71},'
+        ' "top_actions": ["Increase VTI by 10%"], "macro_summary": "Market is fairly valued"}'
+    )
+    result = PortfolioRecommendation.model_validate_json(json_str)
+
+    assert isinstance(result, PortfolioRecommendation), "Result must be a PortfolioRecommendation instance"
+    assert result.risk_tolerance == "moderate"
+    assert math.isclose(result.performance_optimal.sharpe, 0.71)
