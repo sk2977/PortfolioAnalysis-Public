@@ -94,66 +94,55 @@ if missing:
 
 ### Phase 2: Configuration
 
-Ask the user ALL 6 questions below, one at a time. Wait for their answer before moving to the next. Do NOT skip or combine questions.
+**CRITICAL: You MUST ask ALL 6 questions below. Ask them ONE AT A TIME. Wait for the user's answer before asking the next question. Do NOT skip any question. Do NOT combine multiple questions into one message. Do NOT proceed to Phase 3 until all 6 questions have been asked and answered.**
 
-**Question 1 -- Risk tolerance:**
-> "How would you describe your risk tolerance?"
-> - **Conservative**: Lower risk, prioritizes capital preservation (minimize volatility)
-> - **Moderate**: Balanced risk/return (maximize Sharpe ratio)
-> - **Aggressive**: Higher risk for higher returns (maximize Sharpe ratio with less regularization)
+After the user confirms their portfolio in Phase 1, begin with Question 1. After they answer, ask Question 2. Continue until all 6 are done.
+
+**Question 1 of 6 -- Risk tolerance:**
+> "How would you describe your risk tolerance?
+> - Conservative: Lower risk, prioritizes capital preservation
+> - Moderate: Balanced risk/return
+> - Aggressive: Higher risk for higher returns"
+
+**Question 2 of 6 -- Maximum allocation per holding:**
+> "What is the maximum allocation you want for any single holding? (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom percentage)"
+
+**Question 3 of 6 -- Minimum allocation per holding:**
+> "Would you like to set a minimum allocation per holding to prevent the optimizer from concentrating into just a few stocks? (Default: 0% -- the optimizer can drop holdings entirely. Common choices: 1-2% to keep all holdings)"
+
+**Question 4 of 6 -- Guaranteed tickers:**
+> "Are there any tickers you want to guarantee appear in the optimized portfolio? (They will receive a minimum 1% allocation)"
+
+**Question 5 of 6 -- Benchmark:**
+> "Which benchmark would you like to compare against? (Default: VTI -- total US market)"
+
+**Question 6 of 6 -- Exclusions:**
+> "Are there any tickers you want to exclude from the optimized portfolio?"
+
+After all 6 answers are collected, apply the configuration:
 
 ```python
 from scripts.optimize import get_default_config
-config = get_default_config("moderate")  # or "conservative" / "aggressive"
+config = get_default_config("moderate")  # or "conservative" / "aggressive" per Q1
+
+# Q2: Max allocation
+config['max_weight'] = 0.20  # user's answer
+
+# Q3: Min allocation (prevents concentration into few stocks)
+config['min_weight'] = 0.01  # user's answer (0.0 if they said no/default)
+# Note: min_weight x number_of_holdings must be <= 100%
+
+# Q4: Guaranteed tickers
+config['include_tickers'] = ['AAPL', 'MSFT']  # user's answer ([] if none)
+config['include_floor'] = 0.01
+
+# Q5: Benchmark
+config['benchmark'] = 'SPY'  # user's answer ('VTI' if default)
+
+# Q6: Exclusions -- remove from ticker list and re-normalize weights
 ```
 
 Available optimization methods: `max_sharpe`, `min_volatility`, `max_quadratic_utility`
-
-**Question 2 -- Max allocation per holding:**
-> "What is the maximum allocation you want for any single holding? (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom cap like 12%, 20%)"
-
-This question MUST be asked separately from risk tolerance. Apply the user's answer:
-```python
-config['max_weight'] = 0.20  # user's specified cap
-```
-
-**Question 3 -- Include tickers:**
-> "Are there any tickers you want to guarantee appear in the optimized portfolio? (They will receive a minimum 1% allocation.)"
-
-If yes:
-```python
-config['include_tickers'] = ['AAPL', 'MSFT']  # user's specified tickers
-config['include_floor'] = 0.01  # minimum weight (adjust if user requests different floor)
-```
-
-**Question 4 -- Benchmark:**
-> "Which benchmark would you like to compare against? Default is VTI (total US market)."
-
-If user specifies a different benchmark:
-```python
-config['benchmark'] = 'SPY'  # or whatever user specifies
-```
-
-**Question 5 -- Minimum allocation per holding:**
-> "Would you like to set a minimum allocation per holding to prevent the optimizer from concentrating into just a few stocks? (Default: 0% -- the optimizer can drop holdings entirely. Common choices: 1-2% to keep all holdings, or 0% to let the optimizer decide.)"
-
-If user specifies a minimum:
-```python
-config['min_weight'] = 0.01  # user's specified floor (e.g., 1%)
-```
-
-Note: min_weight x number_of_holdings must be <= 100%. If the user sets a min that's too high for their portfolio size, warn them.
-
-**Question 6 -- Exclusions:**
-> "Are there any tickers you want to exclude from the optimized portfolio?"
-
-If yes, remove them from the ticker list and re-normalize weights before proceeding.
-
-If the user wants other custom settings, you can override individual fields:
-```python
-config['risk_free_rate'] = 0.045     # Custom risk-free rate
-config['optimization_method'] = 'min_volatility'  # Override method
-```
 
 ### Phase 3: Data Download
 

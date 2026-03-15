@@ -31,13 +31,14 @@ Your CSV should have columns like `Symbol, Shares, Price` or `Symbol, Weight%`. 
 
 ## Customization
 
-You can tell Claude your preferences:
+Claude will ask you 6 configuration questions before running the analysis:
 
-- **Risk tolerance**: "I'm conservative" / "I'm moderate" / "I'm aggressive"
-- **Exclusions**: "Exclude AAPL and TSLA from the analysis"
-- **Max position size**: "No more than 10% in any single stock"
-- **Time period**: "Use data from 2018 onwards"
-- **Optimization method**: "Minimize volatility instead of maximizing Sharpe"
+1. **Risk tolerance** - Conservative, moderate, or aggressive
+2. **Max allocation per holding** - Cap on any single stock (e.g., 15%, 20%)
+3. **Min allocation per holding** - Floor to prevent concentration (e.g., 1-2%, or 0% to let optimizer decide)
+4. **Guaranteed tickers** - Tickers that must appear in the optimized portfolio
+5. **Benchmark** - What to compare against (default: VTI)
+6. **Exclusions** - Tickers to remove from optimization
 
 ## Risk Tolerance Presets
 
