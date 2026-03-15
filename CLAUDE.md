@@ -140,6 +140,11 @@ config['include_floor'] = 0.01
 config['benchmark'] = 'SPY'  # user's answer ('VTI' if default)
 
 # Q6: Exclusions -- remove from ticker list and re-normalize weights
+exclude = ['TSLA', 'COIN']  # user's answer ([] if none)
+if exclude:
+    portfolio['tickers'] = [t for t in portfolio['tickers'] if t not in exclude]
+    portfolio['allocations'] = portfolio['allocations'].drop(exclude, errors='ignore')
+    portfolio['allocations'] = portfolio['allocations'] / portfolio['allocations'].sum()
 ```
 
 Available optimization methods: `max_sharpe`, `min_volatility`, `max_quadratic_utility`
