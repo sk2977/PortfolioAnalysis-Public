@@ -19,13 +19,13 @@ Your CSV should have columns like `Symbol, Shares, Price` or `Symbol, Weight%`. 
 
 ## What You'll Get
 
-1. **Macro Context** - Is the stock market expensive or cheap right now? (Equity Risk Premium analysis using S&P 500 P/E and Treasury yields)
+1. **Macro Context** - Key US economic indicators (interest rates, unemployment, inflation, GDP)
 
 2. **Portfolio Optimization** - Optimal allocation using three methods (CAPM, Mean Historical, EMA), weighted together for robustness
 
 3. **Rebalancing Recommendations** - What to increase, what to decrease, and by how much
 
-4. **Charts** - Efficient frontier, allocation comparison, correlation matrix, price history, ERP dashboard
+4. **Charts** - Efficient frontier, allocation comparison, correlation matrix, price history, economic indicators dashboards
 
 5. **Risk Assessment** - Current vs optimal Sharpe ratio, volatility comparison
 

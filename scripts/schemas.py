@@ -63,28 +63,27 @@ def _coerce_series_to_dict(v: Any) -> Any:
 # Schema: MacroContext
 # ---------------------------------------------------------------------------
 
-class MacroContext(BaseModel):
-    """Macro economic context from get_macro_context().
+class MacroIndicator(BaseModel):
+    """Single economic indicator from FRED."""
+    value: Optional[float] = None
+    yoy: Optional[float] = None
+    date: Optional[str] = None
+    symbol: Optional[str] = None
 
-    erp_history is intentionally excluded -- it is a large DataFrame
-    not needed for LLM consumption.
-    """
-    pe_ratio: Optional[float] = None
-    earnings_yield: Optional[float] = None
-    treasury_yield: Optional[float] = None
-    erp: Optional[float] = None
-    interpretation: str = ""
-    stats: Dict[str, Optional[float]] = {}
-
-    @field_validator('pe_ratio', 'earnings_yield', 'treasury_yield', 'erp', mode='before')
+    @field_validator('value', 'yoy', mode='before')
     @classmethod
     def coerce_optional_float(cls, v: Any) -> Any:
         return _coerce_numpy(v)
 
-    @field_validator('stats', mode='before')
-    @classmethod
-    def coerce_stats(cls, v: Any) -> Any:
-        return _coerce_dict_values(v)
+
+class MacroContext(BaseModel):
+    """Key economic indicators from get_macro_context().
+
+    Raw timeseries data (data dict) and summary_df are intentionally
+    excluded -- they are large DataFrames not needed for LLM consumption.
+    """
+    indicators: Dict[str, MacroIndicator] = {}
+    interpretation: str = ""
 
 
 # ---------------------------------------------------------------------------

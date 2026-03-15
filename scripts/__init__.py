@@ -4,7 +4,7 @@ PortfolioAnalysis-Public: Portfolio optimization and US macro analysis toolkit.
 Modules:
     parse_portfolio - Parse portfolio CSVs (generic, E-Trade, Schwab formats)
     market_data     - Download and cache historical price data via yfinance
-    macro_analysis  - Equity Risk Premium calculator and macro context
+    macro_analysis  - Key economic indicators from FRED (rates, employment, inflation, growth)
     optimize        - Portfolio optimization using pyportfolioopt (3 methods)
     visualize       - Generate matplotlib charts (PNGs)
     report          - Generate markdown summary reports
@@ -18,8 +18,6 @@ _REQUIRED_PACKAGES = [
     ('yfinance', 'yfinance'),
     ('pypfopt', 'pyportfolioopt'),
     ('pandas_datareader', 'pandas-datareader'),
-    ('requests', 'requests'),
-    ('bs4', 'beautifulsoup4'),
     ('sklearn', 'scikit-learn'),
     ('openpyxl', 'openpyxl'),
     ('pydantic', 'pydantic'),

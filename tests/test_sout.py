@@ -18,14 +18,16 @@ import pytest
 # ---------------------------------------------------------------------------
 
 def test_schema_importable():
-    """All four schema classes can be imported from scripts.schemas."""
+    """All schema classes can be imported from scripts.schemas."""
     from scripts.schemas import (
         AllocationComparison,
         MacroContext,
+        MacroIndicator,
         PerformanceMetrics,
         PortfolioRecommendation,
     )
     assert MacroContext is not None
+    assert MacroIndicator is not None
     assert PerformanceMetrics is not None
     assert AllocationComparison is not None
     assert PortfolioRecommendation is not None
@@ -36,33 +38,31 @@ def test_schema_importable():
 # ---------------------------------------------------------------------------
 
 def test_macro_context_coercion():
-    """MacroContext.model_validate() accepts numpy.float64 values and returns Python float fields."""
+    """MacroContext.model_validate() accepts MacroIndicator dicts with numpy values."""
     from scripts.schemas import MacroContext
 
     data = {
-        'pe_ratio': np.float64(22.5),
-        'earnings_yield': np.float64(0.044),
-        'treasury_yield': np.float64(0.043),
-        'erp': np.float64(0.001),
-        'interpretation': 'Slightly elevated valuations',
-        'stats': {
-            'mean': np.float64(0.032),
-            'std': np.float64(0.018),
-            'min': np.float64(-0.05),
-            'max': np.float64(0.12),
+        'indicators': {
+            'ten_year': {
+                'value': np.float64(4.14),
+                'yoy': np.float64(-5.69),
+                'date': '2025-12-01',
+                'symbol': 'GS10',
+            },
+            'unemployment': {
+                'value': np.float64(4.30),
+                'yoy': np.float64(2.38),
+                'date': '2025-08-01',
+                'symbol': 'UNRATE',
+            },
         },
+        'interpretation': 'Moderate unemployment (4.3%)',
     }
     model = MacroContext.model_validate(data)
 
-    assert isinstance(model.pe_ratio, float)
-    assert isinstance(model.earnings_yield, float)
-    assert isinstance(model.treasury_yield, float)
-    assert isinstance(model.erp, float)
+    assert isinstance(model.indicators['ten_year'].value, float)
+    assert isinstance(model.indicators['ten_year'].yoy, float)
     assert isinstance(model.interpretation, str)
-    assert isinstance(model.stats, dict)
-    # stats values should be Python float, not numpy
-    for v in model.stats.values():
-        assert isinstance(v, (float, type(None))), f"Expected float or None, got {type(v)}"
 
 
 def test_allocation_comparison_coercion():
@@ -90,21 +90,25 @@ def test_allocation_comparison_coercion():
 
 
 def test_nan_coercion():
-    """MacroContext with numpy.nan pe_ratio stores None, not float('nan')."""
+    """MacroIndicator with numpy.nan value stores None, not float('nan')."""
     from scripts.schemas import MacroContext
 
     data = {
-        'pe_ratio': np.nan,
-        'earnings_yield': None,
-        'treasury_yield': np.float64(0.043),
-        'erp': None,
+        'indicators': {
+            'ten_year': {
+                'value': np.nan,
+                'yoy': None,
+                'date': '2025-12-01',
+                'symbol': 'GS10',
+            },
+        },
         'interpretation': 'Data unavailable',
-        'stats': {},
     }
     model = MacroContext.model_validate(data)
 
-    assert model.pe_ratio is None, f"Expected None, got {model.pe_ratio}"
-    assert model.earnings_yield is None
+    assert model.indicators['ten_year'].value is None, \
+        f"Expected None, got {model.indicators['ten_year'].value}"
+    assert model.indicators['ten_year'].yoy is None
     # Verify no nan in dump -- json.dumps would raise ValueError on NaN
     dumped = model.model_dump()
     json_str = json.dumps(dumped)  # Must not raise ValueError
@@ -116,12 +120,15 @@ def test_model_dump_json_serializable():
     from scripts.schemas import MacroContext, PerformanceMetrics, PortfolioRecommendation
 
     macro_data = {
-        'pe_ratio': np.float64(22.5),
-        'earnings_yield': np.float64(0.044),
-        'treasury_yield': np.float64(0.043),
-        'erp': np.float64(0.001),
+        'indicators': {
+            'ten_year': {
+                'value': np.float64(4.14),
+                'yoy': np.float64(-5.69),
+                'date': '2025-12-01',
+                'symbol': 'GS10',
+            },
+        },
         'interpretation': 'Elevated',
-        'stats': {'mean': np.float64(0.032)},
     }
     macro_model = MacroContext.model_validate(macro_data)
     json.dumps(macro_model.model_dump())  # Must not raise
@@ -215,7 +222,7 @@ def test_schema_generable():
 
     assert isinstance(mc_schema, dict), "MacroContext schema must be a dict"
     assert 'properties' in mc_schema, "MacroContext schema must have 'properties' key"
-    assert 'pe_ratio' in mc_schema['properties'], "MacroContext schema must have 'pe_ratio' in properties"
+    assert 'indicators' in mc_schema['properties'], "MacroContext schema must have 'indicators' in properties"
 
 
 def test_validate_json_string():

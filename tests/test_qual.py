@@ -38,11 +38,11 @@ def _minimal_inputs():
             }, index=['VTI', 'BND', 'QQQ']),
         },
         {
-            'pe_ratio': 22.5,
-            'earnings_yield': 4.4,
-            'treasury_yield': 4.3,
-            'erp': 0.1,
-            'interpretation': 'Fair',
+            'indicators': {
+                'ten_year': {'value': 4.14, 'yoy': -5.69, 'date': '2025-12-01', 'symbol': 'GS10'},
+                'unemployment': {'value': 4.30, 'yoy': 2.38, 'date': '2025-08-01', 'symbol': 'UNRATE'},
+            },
+            'interpretation': 'Moderate unemployment (4.3%)',
         },
         {'tickers': ['VTI', 'BND', 'QQQ']},
     )

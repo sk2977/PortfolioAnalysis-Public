@@ -1,7 +1,7 @@
 """
 Report Generator
 ================
-Generates a markdown summary report from optimization and macro analysis results.
+Generates a markdown summary report from optimization and economic indicator results.
 """
 
 import datetime
@@ -134,15 +134,27 @@ def generate_report(optimization_results, macro_context, portfolio_info,
     lines.append(f"")
 
     # Macro Context
-    lines.append(f"## US Macro Context")
+    lines.append(f"## US Economic Indicators")
     lines.append(f"")
-    if macro_context.get('erp') is not None:
-        lines.append(f"| Metric | Value |")
-        lines.append(f"|--------|-------|")
-        lines.append(f"| S&P 500 P/E Ratio | {macro_context['pe_ratio']:.2f} |")
-        lines.append(f"| Earnings Yield | {macro_context['earnings_yield']:.2f}% |")
-        lines.append(f"| 10Y Treasury Yield | {macro_context['treasury_yield']:.2f}% |")
-        lines.append(f"| Equity Risk Premium | {macro_context['erp']:.2f}% |")
+    indicators = macro_context.get('indicators', {})
+    if indicators:
+        lines.append(f"| Indicator | Value | YoY% | Date |")
+        lines.append(f"|-----------|-------|------|------|")
+        indicator_labels = {
+            'bbb_yield': 'BBB Corporate Bonds',
+            'fed_funds': 'Fed Funds Rate',
+            'ten_year': '10Y Treasury',
+            'unemployment': 'Unemployment Rate',
+            'inflation': 'Consumer Price Index',
+            'gdp': 'GDP ($B)',
+            'corporate_profits': 'Corporate Profits ($B)',
+            'sp500': 'S&P 500',
+        }
+        for name, info in indicators.items():
+            if info.get('value') is not None:
+                label = indicator_labels.get(name, name)
+                yoy_str = f"{info['yoy']:+.2f}%" if info.get('yoy') is not None else "N/A"
+                lines.append(f"| {label} | {info['value']:.2f} | {yoy_str} | {info.get('date', 'N/A')} |")
         lines.append(f"")
         lines.append(f"**Interpretation**: {macro_context.get('interpretation', 'N/A')}")
     else:

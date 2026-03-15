@@ -7,7 +7,7 @@ Portfolio optimization and US macro analysis tool powered by Claude. Provide you
 - Parses your portfolio from CSV (E-Trade, Schwab, or generic format) or plain text
 - Downloads historical price data via Yahoo Finance
 - Calculates optimal allocation using 3 expected return methods (CAPM, Mean Historical, EMA)
-- Analyzes the US macro environment (Equity Risk Premium, Treasury yields, S&P 500 P/E)
+- Analyzes key US economic indicators (interest rates, unemployment, inflation, GDP)
 - Generates charts and a markdown report with rebalancing recommendations
 
 ## Prerequisites
@@ -106,7 +106,7 @@ PortfolioAnalysis-Public/
 ├── scripts/
 │   ├── parse_portfolio.py # CSV parsing (multi-format)
 │   ├── market_data.py     # Yahoo Finance downloads + caching
-│   ├── macro_analysis.py  # ERP calculator + macro context
+│   ├── macro_analysis.py  # Key economic indicators from FRED
 │   ├── optimize.py        # pyportfolioopt optimization
 │   ├── visualize.py       # Chart generation (PNGs)
 │   └── report.py          # Markdown report generation
@@ -119,7 +119,7 @@ PortfolioAnalysis-Public/
 1. **Portfolio Input**: Claude parses your holdings from CSV or text
 2. **Q&A**: Claude asks about exclusions, risk tolerance, and constraints
 3. **Data Download**: Historical prices fetched from Yahoo Finance (cached locally)
-4. **Macro Analysis**: Equity Risk Premium calculated from S&P 500 P/E and Treasury yields
+4. **Macro Analysis**: Key economic indicators fetched from FRED (rates, employment, inflation, growth)
 5. **Optimization**: Three expected return methods (CAPM, Mean, EMA) are optimized independently, then combined via weighted average
 6. **Output**: Charts, markdown report, and conversational analysis
 

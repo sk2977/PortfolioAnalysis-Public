@@ -27,7 +27,7 @@ python -m pytest tests/test_stab.py::test_reindex_ffill -v
 
 **Claude-as-orchestrator pattern**: This is NOT a standalone CLI app. Claude reads CLAUDE.md, follows the phased workflow below, executes Python code blocks via tool use, and presents results conversationally. The scripts are libraries, not entry points.
 
-**Data flow**: CSV/text input -> `parse_portfolio` -> `market_data` (yfinance + pickle cache) -> `macro_analysis` (ERP/PE/yields) -> `optimize` (pyportfolioopt) -> `schemas` (Pydantic validation) -> Claude generates narratives -> `visualize` (matplotlib PNGs) -> `report` (markdown assembly)
+**Data flow**: CSV/text input -> `parse_portfolio` -> `market_data` (yfinance + pickle cache) -> `macro_analysis` (FRED economic indicators) -> `optimize` (pyportfolioopt) -> `schemas` (Pydantic validation) -> Claude generates narratives -> `visualize` (matplotlib PNGs) -> `report` (markdown assembly)
 
 **Key design decisions**:
 - Three expected return methods (CAPM, Mean Historical, EMA) weighted 34/33/33 and optimized independently, then combined
@@ -157,11 +157,11 @@ Report any failed tickers to the user. If critical tickers failed, ask if they w
 
 ### Phase 4: Analysis
 
-Run macro analysis and portfolio optimization:
+Run economic indicators and portfolio optimization:
 
 ```python
 from scripts.macro_analysis import get_macro_context
-macro = get_macro_context()
+macro = get_macro_context()  # Fetches 8 FRED indicators (rates, employment, inflation, growth)
 ```
 
 ```python
@@ -182,7 +182,7 @@ After running macro analysis and optimization, validate outputs against Pydantic
 ```python
 from scripts.schemas import MacroContext
 macro_validated = MacroContext.model_validate(macro)
-# macro_validated.pe_ratio is now a Python float (or None)
+# macro_validated.indicators['ten_year'].value is now a Python float (or None)
 # macro_validated.model_dump() is JSON-serializable
 ```
 
@@ -226,7 +226,8 @@ from scripts.visualize import (
     plot_allocation_comparison,
     plot_efficient_frontier,
     plot_correlation_matrix,
-    plot_erp_dashboard,
+    plot_macro_primary,
+    plot_macro_secondary,
     plot_price_history
 )
 
@@ -240,9 +241,12 @@ charts.append(plot_efficient_frontier(
 charts.append(plot_correlation_matrix(results['cov_matrix']))
 charts.append(plot_price_history(market['prices']))
 
-erp_chart = plot_erp_dashboard(macro)
-if erp_chart:
-    charts.append(erp_chart)
+macro_chart1 = plot_macro_primary(macro)
+if macro_chart1:
+    charts.append(macro_chart1)
+macro_chart2 = plot_macro_secondary(macro)
+if macro_chart2:
+    charts.append(macro_chart2)
 ```
 
 ### Phase 5.5: Qualitative Narrative
@@ -250,12 +254,12 @@ if erp_chart:
 Before calling generate_report(), generate three narrative strings. You (Claude) produce these by reading the structured data -- no API call needed.
 
 **1. Macro narrative (macro_narrative):**
-Read macro['erp'], macro['pe_ratio'], macro['treasury_yield'], and macro['interpretation'].
-Write 2-3 sentences interpreting the current macro regime in plain language.
-You MUST cite the actual ERP value and P/E ratio in your text.
+Read macro['indicators'] and macro['interpretation'].
+Write 2-3 sentences interpreting the current economic environment in plain language.
+Reference specific indicator values (interest rates, unemployment, inflation YoY) from the data.
 
 Example style:
-> "At a P/E of 27.4, the S&P 500 earnings yield is 3.6%, below the 10Y Treasury at 4.3%, producing an ERP of -0.7%. This negative premium suggests equities offer no compensation over risk-free bonds at current valuations."
+> "With the Fed Funds rate at 4.09% and 10Y Treasury at 4.14%, the yield curve is nearly flat. Unemployment at 4.3% suggests a moderately tight labor market, while CPI inflation running at 3.0% YoY remains above the Fed's 2% target."
 
 **2. Holding commentary (holding_commentary):**
 From results['comparison'], identify tickers where abs(Difference) > 0.05 (5 percentage points).

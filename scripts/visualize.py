@@ -30,6 +30,12 @@ COLORS = {
     'tertiary': '#70AD47',
     'accent': '#FF5733',
     'band': '#D9EAD3',
+    'unemployment': '#A5A5A5',
+    'inflation': '#FFC000',
+    'gdp': '#2CA02C',
+    'earnings': '#FF5733',
+    'sp500': '#1f77b4',
+    'highlight': '#D9EAD3',
 }
 
 
@@ -199,9 +205,33 @@ def plot_correlation_matrix(cov_matrix, output_dir=OUTPUT_DIR):
     return path
 
 
-def plot_erp_dashboard(macro_data, output_dir=OUTPUT_DIR):
+def _add_value_annotation(ax, data, color, x_offset=0, y_offset=10):
+    """Add current value and date annotation to the last data point."""
+    if data.empty:
+        return
+    last_value = data.iloc[-1, 0]
+    last_date = data.index[-1]
+    ax.annotate(f'{last_value:.2f}%', xy=(last_date, last_value),
+                xytext=(x_offset, y_offset), textcoords='offset points',
+                color=color, fontweight='bold')
+    ax.annotate(f'{last_date.strftime("%Y-%m-%d")}', xy=(last_date, last_value),
+                xytext=(x_offset, y_offset - 25), textcoords='offset points',
+                color=color, fontsize=9)
+
+
+def _add_yoy_highlight(ax, start_date, end_date, yoy_change, metric_name):
+    """Add shaded YoY highlight band with label."""
+    ax.axvspan(start_date, end_date, color=COLORS['highlight'], alpha=0.5)
+    mid_date = start_date + (end_date - start_date) / 2
+    y_pos = ax.get_ylim()[1] * 0.95
+    ax.text(mid_date, y_pos, f'Previous Year\n{metric_name} YoY: {yoy_change:.2f}%',
+            ha='center', va='top', fontsize=10, color='green',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+
+
+def plot_macro_primary(macro_data, output_dir=OUTPUT_DIR):
     """
-    2-panel ERP dashboard: timeseries + components.
+    3-panel primary economic indicators: Interest Rates, Unemployment, CPI.
 
     Parameters
     ----------
@@ -213,68 +243,183 @@ def plot_erp_dashboard(macro_data, output_dir=OUTPUT_DIR):
     str or None
         Path to saved PNG, or None if insufficient data.
     """
+    import datetime as dt
+
     _ensure_output_dir(output_dir)
 
-    erp_df = macro_data.get('erp_history')
-    stats = macro_data.get('stats', {})
+    data = macro_data.get('data', {})
+    indicators = macro_data.get('indicators', {})
 
-    if erp_df is None or erp_df.empty:
-        print("  [SKIP] Insufficient data for ERP dashboard")
+    bbb_yield = data.get('bbb_yield', pd.DataFrame())
+    fed_funds = data.get('fed_funds', pd.DataFrame())
+    ten_year = data.get('ten_year', pd.DataFrame())
+    unemployment = data.get('unemployment', pd.DataFrame())
+    inflation = data.get('inflation', pd.DataFrame())
+
+    if all(d.empty for d in [bbb_yield, fed_funds, ten_year, unemployment, inflation]):
+        print("  [SKIP] Insufficient data for primary macro dashboard")
         return None
 
-    fig, axes = plt.subplots(1, 2, figsize=(16, 6))
+    today = dt.datetime.today()
+    one_year_ago = today - dt.timedelta(days=365)
 
-    # Panel 1: ERP timeseries
-    ax1 = axes[0]
-    if stats.get('p25') is not None and stats.get('p75') is not None:
-        ax1.axhspan(stats['p25'], stats['p75'], alpha=0.2,
-                    color=COLORS['band'], label='25-75 Percentile')
-    if stats.get('mean') is not None:
-        ax1.axhline(stats['mean'], color='gray', linestyle='--', alpha=0.5, label='Mean')
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
 
-    ax1.plot(erp_df.index, erp_df['erp'], color=COLORS['primary'],
-            linewidth=2.5, label='ERP', marker='o', markersize=4)
+    # Panel 1: Interest Rates
+    if not bbb_yield.empty:
+        axes[0].plot(bbb_yield, label='BBB Corporate Bonds',
+                     color=COLORS['primary'], linewidth=2)
+        _add_value_annotation(axes[0], bbb_yield, COLORS['primary'])
+    if not fed_funds.empty:
+        axes[0].plot(fed_funds, label='Fed Funds Rate',
+                     color=COLORS['secondary'], linewidth=2)
+        _add_value_annotation(axes[0], fed_funds, COLORS['secondary'])
+    if not ten_year.empty:
+        axes[0].plot(ten_year, label='10Y Treasury',
+                     color=COLORS['tertiary'], linewidth=2)
+        _add_value_annotation(axes[0], ten_year, COLORS['tertiary'])
 
-    if len(erp_df) > 0:
-        last_date = erp_df.index[-1]
-        last_erp = erp_df['erp'].iloc[-1]
-        ax1.annotate(f'{last_erp:.2f}%', xy=(last_date, last_erp),
-                    xytext=(0, 15), textcoords='offset points',
-                    color=COLORS['accent'], fontweight='bold', fontsize=11, ha='center')
+    axes[0].set_title('Interest Rates Comparison', fontsize=14, fontweight='bold')
+    axes[0].legend(loc='upper left')
+    axes[0].grid(True, alpha=0.3)
+    axes[0].yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.1f}%'))
 
-    ax1.set_title('Equity Risk Premium Over Time', fontsize=13, fontweight='bold')
-    ax1.set_ylabel('ERP (%)', fontsize=11)
-    ax1.grid(True, alpha=0.3)
-    ax1.legend(loc='upper left', fontsize=10)
-    ax1.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.1f}%'))
+    bbb_yoy = indicators.get('bbb_yield', {}).get('yoy')
+    if bbb_yoy is not None:
+        _add_yoy_highlight(axes[0], one_year_ago, today, bbb_yoy, 'BBB Yield')
 
-    # Panel 2: Components
-    ax2 = axes[1]
-    ax2.plot(erp_df.index, erp_df['earnings_yield'], color=COLORS['secondary'],
-            linewidth=2.5, label='Earnings Yield', marker='s', markersize=4)
-    ax2.plot(erp_df.index, erp_df['treasury_yield'], color=COLORS['tertiary'],
-            linewidth=2.5, label='10Y Treasury Yield', marker='^', markersize=4)
+    # Panel 2: Unemployment
+    if not unemployment.empty:
+        axes[1].plot(unemployment, label='Unemployment Rate',
+                     color=COLORS['unemployment'], linewidth=2)
+        axes[1].fill_between(unemployment.index, unemployment.iloc[:, 0],
+                             alpha=0.3, color=COLORS['unemployment'])
+        _add_value_annotation(axes[1], unemployment, COLORS['unemployment'])
 
-    if len(erp_df) > 0:
-        last_date = erp_df.index[-1]
-        ax2.annotate(f'{erp_df["earnings_yield"].iloc[-1]:.2f}%',
-                    xy=(last_date, erp_df['earnings_yield'].iloc[-1]),
-                    xytext=(0, 15), textcoords='offset points',
-                    color=COLORS['secondary'], fontweight='bold', fontsize=10, ha='center')
-        ax2.annotate(f'{erp_df["treasury_yield"].iloc[-1]:.2f}%',
-                    xy=(last_date, erp_df['treasury_yield'].iloc[-1]),
-                    xytext=(0, -20), textcoords='offset points',
-                    color=COLORS['tertiary'], fontweight='bold', fontsize=10, ha='center')
+    axes[1].set_title('Unemployment Rate', fontsize=14, fontweight='bold')
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
+    unemp_max = unemployment.max().iloc[0] if not unemployment.empty else 6
+    axes[1].set_ylim(bottom=0, top=max(6, unemp_max * 1.1))
+    axes[1].yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.1f}%'))
 
-    ax2.set_title('ERP Components: Earnings Yield vs Treasury Yield',
-                  fontsize=13, fontweight='bold')
-    ax2.set_ylabel('Yield (%)', fontsize=11)
-    ax2.grid(True, alpha=0.3)
-    ax2.legend(loc='upper left', fontsize=10)
-    ax2.yaxis.set_major_formatter(FuncFormatter(lambda y, _: f'{y:.1f}%'))
+    unemp_yoy = indicators.get('unemployment', {}).get('yoy')
+    if unemp_yoy is not None:
+        _add_yoy_highlight(axes[1], one_year_ago, today, unemp_yoy, 'Unemployment')
+
+    # Panel 3: CPI
+    if not inflation.empty:
+        axes[2].plot(inflation, label='CPI (1982-84=100)',
+                     color=COLORS['inflation'], linewidth=2)
+        last_value = inflation.iloc[-1, 0]
+        last_date = inflation.index[-1]
+        axes[2].annotate(f'{last_value:.1f}', xy=(last_date, last_value),
+                         xytext=(0, 10), textcoords='offset points',
+                         color=COLORS['inflation'], fontweight='bold')
+        axes[2].annotate(f'{last_date.strftime("%Y-%m-%d")}', xy=(last_date, last_value),
+                         xytext=(0, -15), textcoords='offset points',
+                         color=COLORS['inflation'], fontsize=9)
+
+    axes[2].set_title('Consumer Price Index', fontsize=14, fontweight='bold')
+    axes[2].set_ylabel('CPI Index')
+    axes[2].legend()
+    axes[2].grid(True, alpha=0.3)
+    infl_min = inflation.min().iloc[0] if not inflation.empty else 100
+    axes[2].set_ylim(bottom=max(100, infl_min * 0.95))
+
+    infl_yoy = indicators.get('inflation', {}).get('yoy')
+    if infl_yoy is not None:
+        _add_yoy_highlight(axes[2], one_year_ago, today, infl_yoy, 'Inflation')
 
     plt.tight_layout()
-    path = str(Path(output_dir) / 'erp_dashboard.png')
+    path = str(Path(output_dir) / 'macro_primary.png')
+    plt.savefig(path, dpi=150, bbox_inches='tight')
+    plt.close()
+    print(f"  [OK] Saved: {path}")
+    return path
+
+
+def plot_macro_secondary(macro_data, output_dir=OUTPUT_DIR):
+    """
+    2-panel secondary indicators: GDP Growth, Corporate Profits vs S&P 500.
+
+    Parameters
+    ----------
+    macro_data : dict
+        Output from macro_analysis.get_macro_context().
+
+    Returns
+    -------
+    str or None
+        Path to saved PNG, or None if insufficient data.
+    """
+    import datetime as dt
+
+    _ensure_output_dir(output_dir)
+
+    data = macro_data.get('data', {})
+    indicators = macro_data.get('indicators', {})
+
+    gdp = data.get('gdp', pd.DataFrame())
+    corporate_profits = data.get('corporate_profits', pd.DataFrame())
+    sp500 = data.get('sp500', pd.DataFrame())
+
+    if all(d.empty for d in [gdp, corporate_profits, sp500]):
+        print("  [SKIP] Insufficient data for secondary macro dashboard")
+        return None
+
+    today = dt.datetime.today()
+    one_year_ago = today - dt.timedelta(days=365)
+
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 6))
+
+    # Panel 1: GDP
+    if not gdp.empty:
+        axes[0].plot(gdp, label='US GDP', color=COLORS['gdp'], linewidth=2)
+        axes[0].fill_between(gdp.index, gdp.iloc[:, 0], alpha=0.3, color=COLORS['gdp'])
+
+        last_value = gdp.iloc[-1, 0]
+        last_date = gdp.index[-1]
+        axes[0].annotate(f'${last_value / 1000:.1f}T', xy=(last_date, last_value),
+                         xytext=(0, 10), textcoords='offset points',
+                         color=COLORS['gdp'], fontweight='bold')
+        axes[0].annotate(f'{last_date.strftime("%Y-%m-%d")}', xy=(last_date, last_value),
+                         xytext=(0, -15), textcoords='offset points',
+                         color=COLORS['gdp'], fontsize=9)
+
+        axes[0].set_title('US GDP Growth', fontsize=14, fontweight='bold')
+        axes[0].set_ylabel('GDP (Billions USD)')
+        axes[0].legend()
+        axes[0].grid(True, alpha=0.3)
+
+        gdp_yoy = indicators.get('gdp', {}).get('yoy')
+        if gdp_yoy is not None:
+            _add_yoy_highlight(axes[0], one_year_ago, gdp.index[-1], gdp_yoy, 'GDP')
+
+    # Panel 2: Corporate Profits vs S&P 500
+    if not corporate_profits.empty:
+        axes[1].plot(corporate_profits, label='Corporate Profits After Tax',
+                     color=COLORS['earnings'], linewidth=2)
+        axes[1].set_ylabel('Corporate Profits ($B)', color=COLORS['earnings'])
+        axes[1].tick_params(axis='y', labelcolor=COLORS['earnings'])
+
+        if not sp500.empty:
+            ax2 = axes[1].twinx()
+            ax2.plot(sp500, label='S&P 500', color=COLORS['sp500'], linewidth=2)
+            ax2.set_ylabel('S&P 500 Index', color=COLORS['sp500'])
+            ax2.tick_params(axis='y', labelcolor=COLORS['sp500'])
+
+            if len(corporate_profits) > 1 and len(sp500) > 1:
+                corr = corporate_profits.iloc[:, 0].corr(sp500.iloc[:, 0])
+                axes[1].text(0.05, 0.95, f'Correlation: {corr:.3f}',
+                             transform=axes[1].transAxes, fontsize=10,
+                             bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
+        axes[1].set_title('Corporate Profits vs S&P 500', fontsize=14, fontweight='bold')
+        axes[1].grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    path = str(Path(output_dir) / 'macro_secondary.png')
     plt.savefig(path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"  [OK] Saved: {path}")
