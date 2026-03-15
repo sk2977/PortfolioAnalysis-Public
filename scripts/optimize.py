@@ -17,6 +17,7 @@ from pypfopt import risk_models, expected_returns, EfficientFrontier, objective_
 RISK_PRESETS = {
     'conservative': {
         'max_weight': 0.10,
+        'min_weight': 0.0,
         'optimization_method': 'min_volatility',
         'gamma': 0.10,
         'risk_free_rate': 0.04,
@@ -27,6 +28,7 @@ RISK_PRESETS = {
     },
     'moderate': {
         'max_weight': 0.15,
+        'min_weight': 0.0,
         'optimization_method': 'max_sharpe',
         'gamma': 0.05,
         'risk_free_rate': 0.04,
@@ -37,6 +39,7 @@ RISK_PRESETS = {
     },
     'aggressive': {
         'max_weight': 0.25,
+        'min_weight': 0.0,
         'optimization_method': 'max_sharpe',
         'gamma': 0.02,
         'risk_free_rate': 0.04,
@@ -48,7 +51,8 @@ RISK_PRESETS = {
 }
 
 
-def _build_weight_bounds(tickers, max_weight, include_tickers=None, include_floor=0.01):
+def _build_weight_bounds(tickers, max_weight, min_weight=0.0,
+                         include_tickers=None, include_floor=0.01):
     """
     Build weight bounds for EfficientFrontier.
 
@@ -58,24 +62,33 @@ def _build_weight_bounds(tickers, max_weight, include_tickers=None, include_floo
         Ordered list of tickers (must match cov_matrix.index order).
     max_weight : float
         Maximum weight per security (upper bound for all tickers).
+    min_weight : float
+        Minimum weight per security (lower bound for all tickers).
+        Prevents the optimizer from zeroing out holdings. Default 0.
     include_tickers : list of str or None
         Tickers that must appear with at least include_floor weight.
-        Matching is case-insensitive. If None or empty, returns scalar tuple.
+        Matching is case-insensitive. If None or empty and min_weight is 0,
+        returns scalar tuple.
     include_floor : float
-        Minimum weight for forced-include tickers.
+        Minimum weight for forced-include tickers. Takes precedence over
+        min_weight for those tickers if include_floor > min_weight.
 
     Returns
     -------
     tuple or list of tuples
-        Scalar (0, max_weight) if no include list; list of per-ticker
-        (min, max) tuples if include list is provided.
+        Scalar (min_weight, max_weight) if no include list and uniform bounds;
+        list of per-ticker (min, max) tuples otherwise.
     """
-    if not include_tickers:
+    if not include_tickers and min_weight == 0.0:
         return (0, max_weight)
+
+    if not include_tickers:
+        return (min_weight, max_weight)
 
     forced = {t.upper() for t in include_tickers}
     return [
-        (include_floor, max_weight) if ticker.upper() in forced else (0, max_weight)
+        (max(include_floor, min_weight), max_weight) if ticker.upper() in forced
+        else (min_weight, max_weight)
         for ticker in tickers
     ]
 
@@ -162,6 +175,7 @@ def optimize_portfolio(prices, benchmark_prices, current_allocations, config=Non
             config['risk_free_rate'],
             config['gamma'],
             config['optimization_method'],
+            min_weight=config.get('min_weight', 0.0),
             include_tickers=config.get('include_tickers'),
             include_floor=config.get('include_floor', 0.01)
         )
@@ -231,10 +245,11 @@ def calculate_expected_returns(prices, benchmark_prices, risk_free_rate=0.04):
 
 def _run_single_optimization(mu, cov_matrix, max_weight, risk_free_rate,
                               gamma, method='max_sharpe',
+                              min_weight=0.0,
                               include_tickers=None, include_floor=0.01):
     """Run optimization for a single expected returns method."""
     bounds = _build_weight_bounds(
-        list(cov_matrix.index), max_weight,
+        list(cov_matrix.index), max_weight, min_weight=min_weight,
         include_tickers=include_tickers, include_floor=include_floor
     )
     ef = EfficientFrontier(mu, cov_matrix, weight_bounds=bounds)

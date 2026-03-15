@@ -94,52 +94,65 @@ if missing:
 
 ### Phase 2: Configuration
 
-Ask the user about their risk tolerance:
+Ask the user ALL 6 questions below, one at a time. Wait for their answer before moving to the next. Do NOT skip or combine questions.
 
+**Question 1 -- Risk tolerance:**
 > "How would you describe your risk tolerance?"
-> - **Conservative**: Lower risk, prioritizes capital preservation (max 10% per holding, minimize volatility)
-> - **Moderate**: Balanced risk/return (max 15% per holding, maximize Sharpe ratio)
-> - **Aggressive**: Higher risk for higher returns (max 25% per holding, maximize Sharpe ratio with less regularization)
+> - **Conservative**: Lower risk, prioritizes capital preservation (minimize volatility)
+> - **Moderate**: Balanced risk/return (maximize Sharpe ratio)
+> - **Aggressive**: Higher risk for higher returns (maximize Sharpe ratio with less regularization)
 
-Get config:
 ```python
 from scripts.optimize import get_default_config
 config = get_default_config("moderate")  # or "conservative" / "aggressive"
 ```
 
-If the user wants custom settings, you can override individual fields:
-```python
-config['max_weight'] = 0.20          # Custom max per security
-config['risk_free_rate'] = 0.045     # Custom risk-free rate
-config['optimization_method'] = 'min_volatility'  # Override method
-```
-
 Available optimization methods: `max_sharpe`, `min_volatility`, `max_quadratic_utility`
 
-After setting risk tolerance, ask about max allocation:
+**Question 2 -- Max allocation per holding:**
+> "What is the maximum allocation you want for any single holding? (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom cap like 12%, 20%)"
 
-> "Would you like to cap the maximum allocation per holding? (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom cap like 12%, 20%)"
-
-If user specifies a custom cap:
+This question MUST be asked separately from risk tolerance. Apply the user's answer:
 ```python
 config['max_weight'] = 0.20  # user's specified cap
 ```
 
-Then ask two additional questions:
-
+**Question 3 -- Include tickers:**
 > "Are there any tickers you want to guarantee appear in the optimized portfolio? (They will receive a minimum 1% allocation.)"
 
-If yes, apply:
+If yes:
 ```python
 config['include_tickers'] = ['AAPL', 'MSFT']  # user's specified tickers
 config['include_floor'] = 0.01  # minimum weight (adjust if user requests different floor)
 ```
 
+**Question 4 -- Benchmark:**
 > "Which benchmark would you like to compare against? Default is VTI (total US market)."
 
 If user specifies a different benchmark:
 ```python
 config['benchmark'] = 'SPY'  # or whatever user specifies
+```
+
+**Question 5 -- Minimum allocation per holding:**
+> "Would you like to set a minimum allocation per holding to prevent the optimizer from concentrating into just a few stocks? (Default: 0% -- the optimizer can drop holdings entirely. Common choices: 1-2% to keep all holdings, or 0% to let the optimizer decide.)"
+
+If user specifies a minimum:
+```python
+config['min_weight'] = 0.01  # user's specified floor (e.g., 1%)
+```
+
+Note: min_weight x number_of_holdings must be <= 100%. If the user sets a min that's too high for their portfolio size, warn them.
+
+**Question 6 -- Exclusions:**
+> "Are there any tickers you want to exclude from the optimized portfolio?"
+
+If yes, remove them from the ticker list and re-normalize weights before proceeding.
+
+If the user wants other custom settings, you can override individual fields:
+```python
+config['risk_free_rate'] = 0.045     # Custom risk-free rate
+config['optimization_method'] = 'min_volatility'  # Override method
 ```
 
 ### Phase 3: Data Download
