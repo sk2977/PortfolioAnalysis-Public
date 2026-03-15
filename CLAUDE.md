@@ -20,7 +20,7 @@ python -m pytest tests/ -v
 python -m pytest tests/test_stab.py -v
 
 # Run a specific test
-python -m pytest tests/test_stab.py::test_reindex_ffill -v
+python -m pytest tests/test_stab.py::test_cache_warn_on_failure -v
 ```
 
 ## Architecture
@@ -146,6 +146,8 @@ if exclude:
     portfolio['allocations'] = portfolio['allocations'].drop(exclude, errors='ignore')
     portfolio['allocations'] = portfolio['allocations'] / portfolio['allocations'].sum()
 ```
+
+**Feasibility guard**: After applying exclusions, check that `max_weight * len(portfolio['tickers']) >= 1.0`. If not, the optimizer cannot produce weights summing to 100%. Auto-adjust: `config['max_weight'] = max(config['max_weight'], 1.0 / len(portfolio['tickers']) + 0.05)` and inform the user of the adjustment.
 
 Available optimization methods: `max_sharpe`, `min_volatility`, `max_quadratic_utility`
 

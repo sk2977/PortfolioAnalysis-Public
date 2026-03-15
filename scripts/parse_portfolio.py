@@ -41,8 +41,12 @@ def parse_csv(file_path, exclude_tickers=None):
     if exclude_tickers is None:
         exclude_tickers = []
 
-    # Read raw to detect format
-    raw = pd.read_csv(file_path, nrows=15, dtype=str, encoding='utf-8')
+    # Read raw to detect format.  E-Trade exports have multi-section
+    # headers with different column counts, so pd.read_csv may fail.
+    try:
+        raw = pd.read_csv(file_path, nrows=15, dtype=str, encoding='utf-8')
+    except (pd.errors.ParserError, Exception):
+        raw = pd.DataFrame()  # empty DF; _detect_format falls back to line scan
     fmt = _detect_format(raw, file_path)
     print(f"  Detected CSV format: {fmt}")
 

@@ -10,7 +10,7 @@
 import math
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -91,10 +91,22 @@ class MacroContext(BaseModel):
 # ---------------------------------------------------------------------------
 
 class PerformanceMetrics(BaseModel):
-    """Return, volatility, and Sharpe ratio for current or optimal portfolio."""
+    """Return, volatility, and Sharpe ratio for current or optimal portfolio.
+
+    The optimizer returns dicts with key 'return', but Pydantic reserves that
+    name.  We accept both 'annual_return' and 'return' via model_validator.
+    """
     annual_return: float
     volatility: float
     sharpe: float
+
+    @model_validator(mode='before')
+    @classmethod
+    def _map_return_key(cls, data: Any) -> Any:
+        """Accept 'return' as an alias for 'annual_return'."""
+        if isinstance(data, dict) and 'return' in data and 'annual_return' not in data:
+            data['annual_return'] = data.pop('return')
+        return data
 
     @field_validator('annual_return', 'volatility', 'sharpe', mode='before')
     @classmethod
