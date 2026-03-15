@@ -276,7 +276,22 @@ Only include material changes -- skip tickers with smaller shifts.
 
 Do NOT use investment advice language ("you should buy/sell"). Use observational language ("the optimizer suggests increasing", "the model recommends reducing").
 
-**3. Method spread note (method_spread_note):**
+**3. Macro-portfolio synthesis (macro_portfolio_note):**
+This is the most important narrative. Read BOTH macro['indicators'] AND results['comparison'] together.
+Write 2-4 sentences connecting the current economic environment to the specific allocation recommendations.
+
+Consider:
+- How do interest rate levels affect bond-heavy vs equity-heavy tilts?
+- Does the unemployment/inflation picture favor defensive or growth holdings?
+- Are the optimizer's largest recommended changes consistent with the macro backdrop?
+- Are there any contradictions worth flagging (e.g., optimizer increases equity exposure despite elevated rates)?
+
+Example style:
+> "With the Fed Funds rate at 4.09% and 10Y Treasury at 4.14%, fixed income yields remain attractive. The optimizer's recommendation to increase BND from 15% to 25% aligns with this rate environment. However, the simultaneous increase in QQQ exposure introduces growth sensitivity that could underperform if rates stay elevated."
+
+Do NOT use investment advice language ("you should buy/sell"). Use observational language ("the optimizer's tilt toward X is consistent with...", "this allocation may face headwinds if...").
+
+**4. Method spread note (method_spread_note):**
 From results['returns_dict'], compare CAPM, mean historical, and EMA expected returns per ticker.
 If any ticker's spread (max - min across methods) exceeds 5 percentage points (0.05):
 
@@ -286,7 +301,7 @@ Set method_spread_note to a string like:
 If multiple tickers exceed the threshold, mention each.
 If no ticker exceeds the threshold, set method_spread_note = None.
 
-Store all three as Python variables for the next step.
+Store all four as Python variables for the next step.
 
 ### Phase 6: Report
 
@@ -297,16 +312,18 @@ from scripts.report import generate_report
 report_md = generate_report(results, macro, portfolio, charts,
                              macro_narrative=macro_narrative,
                              holding_commentary=holding_commentary,
+                             macro_portfolio_note=macro_portfolio_note,
                              method_spread_note=method_spread_note)
 print(report_md)
 ```
 
 Present the key findings to the user in a clear narrative:
-1. Macro context (is the market expensive or cheap?)
+1. Macro context (current economic environment)
 2. Portfolio optimization results (current vs optimal)
 3. Top rebalancing actions
-4. Implementation priority
-5. Qualitative commentary (macro interpretation, holding notes, confidence indicators)
+4. Macro-portfolio synthesis (how macro conditions relate to the recommended changes)
+5. Implementation priority
+6. Confidence indicators (method spread warnings)
 
 ### Phase 7: Follow-up
 

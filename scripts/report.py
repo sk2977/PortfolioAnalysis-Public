@@ -63,6 +63,7 @@ def _compute_method_spread(returns_dict, threshold=0.05):
 def generate_report(optimization_results, macro_context, portfolio_info,
                     chart_paths=None, output_dir=OUTPUT_DIR,
                     macro_narrative=None, holding_commentary=None,
+                    macro_portfolio_note=None,
                     method_spread_note=None, returns_dict=None):
     """
     Generate a markdown report summarizing the analysis.
@@ -253,6 +254,12 @@ def generate_report(optimization_results, macro_context, portfolio_info,
         lines.append(f"")
         for ticker, note in holding_commentary.items():
             lines.append(f"- **{ticker}**: {note}")
+        lines.append(f"")
+
+    if macro_portfolio_note:
+        lines.append(f"### Macro-Portfolio Considerations")
+        lines.append(f"")
+        lines.append(macro_portfolio_note)
         lines.append(f"")
 
     if method_spread_note:
