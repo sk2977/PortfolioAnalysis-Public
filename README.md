@@ -1,5 +1,9 @@
 # PortfolioAnalysis
 
+<p align="center">
+  <img src="assets/banner.png" alt="Portfolio Optimizer" width="800">
+</p>
+
 Portfolio optimization and US macro analysis tool powered by Claude. Provide your holdings, get optimized allocation recommendations with macro context.
 
 ## What It Does
