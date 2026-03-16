@@ -100,7 +100,7 @@ def test_parse_excel_missing_file():
 
 def test_csv_still_works():
     """parse_csv() on sample_portfolio.csv still returns a valid portfolio dict (regression guard)."""
-    csv_path = "sample_portfolio.csv"
+    csv_path = str(Path(__file__).parent.parent / '.claude' / 'skills' / 'portfolio-analysis' / 'assets' / 'sample_portfolio.csv')
     if not os.path.exists(csv_path):
         pytest.skip("sample_portfolio.csv not found -- skipping regression guard")
 

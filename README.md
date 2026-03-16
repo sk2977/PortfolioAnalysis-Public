@@ -20,40 +20,41 @@ Portfolio optimization and US macro analysis tool powered by Claude. Provide you
 - Python 3.10+
 - [Claude Desktop](https://claude.ai/download) (Cowork mode) or [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 
-## Setup
+## Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/sk2977/PortfolioAnalysis-Public.git
-   cd PortfolioAnalysis-Public
-   ```
+### Option A -- Install as a skill (recommended)
 
-2. **Create a virtual environment**
-   ```bash
-   python -m venv venv
+```bash
+npx add-skill sk2977/PortfolioAnalysis-Public --skill portfolio-analysis
+```
 
-   # Windows
-   venv\Scripts\activate
+Then install Python dependencies:
+```bash
+pip install -r .claude/skills/portfolio-analysis/scripts/requirements.txt
+```
 
-   # Mac/Linux
-   source venv/bin/activate
-   ```
+### Option B -- Clone the full repository
 
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+git clone https://github.com/sk2977/PortfolioAnalysis-Public.git
+cd PortfolioAnalysis-Public
+python -m venv venv
 
-4. **Open with Claude**
-   - **Claude Code**: Run `claude` in the project directory -- the skill at `.claude/skills/portfolio-analysis/` is detected automatically
-   - **Claude Desktop**: Open the project folder in Cowork mode
+# Windows
+venv\Scripts\activate
+
+# Mac/Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
+```
 
 ## Getting Started
 
 ### Claude Desktop (Cowork)
 
-1. Open Claude Desktop and start a new conversation
-2. Click "Add to project" and select the cloned `PortfolioAnalysis-Public` directory
+1. Open Claude Desktop and switch to the Cowork tab
+2. Select "Work in a folder" and choose the project directory
 3. Upload your CSV/XLSX file or describe your holdings in plain text
 4. Type: "Run portfolio analysis" and Claude handles the rest
 
@@ -63,12 +64,10 @@ Portfolio optimization and US macro analysis tool powered by Claude. Provide you
 2. Tell Claude about your portfolio (file path, or describe in text)
 3. Claude walks you through configuration and runs the full pipeline
 
-See [prompt.md](prompt.md) for the full user guide with examples.
-
 ## Usage Examples
 
 **Use the sample portfolio:**
-> "Run portfolio analysis using sample_portfolio.csv"
+> "Run portfolio analysis using the sample portfolio"
 
 **Provide your own CSV:**
 > "Analyze my portfolio from my_holdings.csv"
@@ -91,10 +90,10 @@ E-Trade and Schwab CSV/Excel exports are also auto-detected.
 
 ## How It Works
 
-Claude reads the instructions in `CLAUDE.md` and orchestrates a 7-phase pipeline:
+The `portfolio-analysis` skill orchestrates a 7-phase pipeline:
 
 1. **Portfolio Input** -- Parses holdings from CSV, Excel, or text. Auto-detects broker format.
-2. **Configuration** -- Asks 6 questions one at a time: risk tolerance, max/min allocation, guaranteed tickers, benchmark, exclusions.
+2. **Configuration** -- Asks 6 questions one at a time: risk tolerance, max/min allocation, guaranteed tickers, benchmark, exclusions. (Or runs with moderate defaults in auto-run mode.)
 3. **Data Download** -- Fetches historical prices from Yahoo Finance with local pickle caching (4-hour TTL).
 4. **Analysis** -- Runs macro analysis (8 FRED indicators) and mean-variance optimization (3 return methods weighted 34/33/33).
 5. **Validation** -- Pydantic schemas normalize numpy/pandas types and catch structural issues.
@@ -107,31 +106,21 @@ No API keys required -- Claude provides the AI layer directly.
 
 ```
 PortfolioAnalysis-Public/
-├── CLAUDE.md              # Points Claude to the portfolio-analysis skill
-├── prompt.md              # User-facing quick start guide
-├── README.md              # This file
-├── requirements.txt       # Python dependencies
-├── sample_portfolio.csv   # Example portfolio for testing
-├── scripts/               # Thin proxy -- redirects to skill scripts
-│   └── __init__.py        # Preflight check + import redirection
+├── CLAUDE.md                  # Points Claude to the skill
+├── README.md                  # This file
+├── requirements.txt           # Python dependencies
 ├── .claude/
 │   └── skills/
-│       └── portfolio-analysis/  # The skill (source of truth)
-│           ├── SKILL.md         # Full workflow instructions
-│           ├── scripts/         # All Python source code
-│           │   ├── parse_portfolio.py
-│           │   ├── market_data.py
-│           │   ├── macro_analysis.py
-│           │   ├── optimize.py
-│           │   ├── schemas.py
-│           │   ├── visualize.py
-│           │   └── report.py
-│           ├── assets/          # Sample data
-│           ├── evals/           # Skill evaluation definitions
-│           └── references/      # Narrative generation guide
-├── tests/                 # Test suite (pytest)
-├── data_cache/            # (gitignored) Pickle cache for API data
-└── output/                # (gitignored) Generated reports and charts
+│       └── portfolio-analysis/    # The skill (source of truth)
+│           ├── SKILL.md           # Full workflow instructions
+│           ├── scripts/           # All Python source code
+│           ├── assets/            # Sample portfolio CSV
+│           ├── evals/             # Skill evaluation definitions
+│           └── references/        # Narrative generation guide
+├── scripts/                   # Import proxy for tests
+├── tests/                     # Test suite (pytest)
+├── data_cache/                # (gitignored) Pickle cache for API data
+└── output/                    # (gitignored) Generated reports and charts
 ```
 
 ## Running Tests
