@@ -97,9 +97,7 @@ if missing:
 
 ### Phase 2: Configuration
 
-**Quick mode**: Only if the user explicitly asks to skip configuration (e.g., "use defaults", "quick run", "just run it"), use moderate defaults: risk_tolerance=moderate, max_weight=0.15, min_weight=0.0, include_tickers=[], benchmark='VTI', no exclusions. Proceed directly to Phase 3.
-
-**Default behavior**: Ask ALL 6 questions below. Ask them ONE AT A TIME. Wait for the user's answer before asking the next question. Do NOT skip any question. Do NOT combine multiple questions into one message. Do NOT proceed to Phase 3 until all 6 questions have been asked and answered.
+**CRITICAL: Ask ALL 6 questions below. Ask them ONE AT A TIME. Wait for the user's answer before asking the next question. Do NOT skip any question. Do NOT combine multiple questions into one message. Do NOT offer to skip questions or present a "quick mode" option. Do NOT proceed to Phase 3 until all 6 questions have been asked and answered.**
 
 After the user confirms their portfolio in Phase 1, begin with Question 1. After they answer, ask Question 2. Continue until all 6 are done.
 
