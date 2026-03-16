@@ -1,0 +1,23 @@
+{
+  "skill_name": "portfolio-analysis",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "My portfolio is 40% VTI, 25% QQQ, 20% BND, 10% AAPL, 5% MSFT. I'm moderate risk. Analyze and optimize it.",
+      "expected_output": "Full 7-phase workflow: confirm holdings, ask all 6 config questions one at a time, download data, run macro + optimization, validate schemas, generate 6 charts, produce 4 narratives, assemble report with current vs optimal comparison",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Here's my E-Trade portfolio export at path/to/PortfolioDownload.csv -- analyze my portfolio and tell me how to rebalance",
+      "expected_output": "Detect E-Trade CSV format, parse holdings (skip CASH/TOTAL rows), show table for confirmation, then run full optimization pipeline with all 6 config questions asked sequentially",
+      "files": ["path/to/PortfolioDownload.csv"]
+    },
+    {
+      "id": 3,
+      "prompt": "I hold equal weights in SPY, QQQ, ARKK, TLT, and GLD. I'm aggressive and want max 30% in any single holding. Don't include ARKK in the optimization. Optimize this for me.",
+      "expected_output": "Build portfolio from text (20% each), still ask remaining config questions (Q3-Q5 since Q1=aggressive, Q2=30%, Q6=ARKK are given), exclude ARKK, run optimization with aggressive preset and 30% max weight, generate full report",
+      "files": []
+    }
+  ]
+}

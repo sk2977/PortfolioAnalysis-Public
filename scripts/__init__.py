@@ -1,14 +1,25 @@
 """
-PortfolioAnalysis-Public: Portfolio optimization and US macro analysis toolkit.
+scripts -- thin proxy package that re-exports from .claude/skills/portfolio-analysis/scripts/.
 
-Modules:
-    parse_portfolio - Parse portfolio CSVs (generic, E-Trade, Schwab formats)
-    market_data     - Download and cache historical price data via yfinance
-    macro_analysis  - Key economic indicators from FRED (rates, employment, inflation, growth)
-    optimize        - Portfolio optimization using pyportfolioopt (3 methods)
-    visualize       - Generate matplotlib charts (PNGs)
-    report          - Generate markdown summary reports
+The canonical source code lives in the skill directory. This package exists so that
+tests and CLAUDE.md can use `from scripts.X import ...` while the skill owns the code.
 """
+
+import importlib
+import sys
+from pathlib import Path
+
+# Resolve the skill's scripts directory
+_SKILL_SCRIPTS = str(
+    Path(__file__).resolve().parent.parent
+    / '.claude' / 'skills' / 'portfolio-analysis' / 'scripts'
+)
+if _SKILL_SCRIPTS not in sys.path:
+    sys.path.insert(0, _SKILL_SCRIPTS)
+
+# ---------------------------------------------------------------------------
+# Preflight check (tested by test_cowk.py)
+# ---------------------------------------------------------------------------
 
 _REQUIRED_PACKAGES = [
     ('pandas', 'pandas'),
@@ -38,3 +49,17 @@ def _preflight_check():
 
 
 _preflight_check()
+
+# ---------------------------------------------------------------------------
+# Eagerly register skill submodules as scripts.X in sys.modules
+# ---------------------------------------------------------------------------
+
+_SUBMODULES = [
+    'parse_portfolio', 'market_data', 'macro_analysis',
+    'optimize', 'schemas', 'visualize', 'report',
+]
+
+for _name in _SUBMODULES:
+    _mod = importlib.import_module(_name)
+    sys.modules[f'scripts.{_name}'] = _mod
+    globals()[_name] = _mod

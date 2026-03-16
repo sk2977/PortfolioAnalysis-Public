@@ -45,8 +45,8 @@ Portfolio optimization and US macro analysis tool powered by Claude. Provide you
    ```
 
 4. **Open with Claude**
+   - **Claude Code**: Run `claude` in the project directory -- the skill at `.claude/skills/portfolio-analysis/` is detected automatically
    - **Claude Desktop**: Open the project folder in Cowork mode
-   - **Claude Code**: Run `claude` in the project directory
 
 ## Getting Started
 
@@ -107,19 +107,28 @@ No API keys required -- Claude provides the AI layer directly.
 
 ```
 PortfolioAnalysis-Public/
-├── CLAUDE.md              # Orchestration instructions for Claude
+├── CLAUDE.md              # Points Claude to the portfolio-analysis skill
 ├── prompt.md              # User-facing quick start guide
 ├── README.md              # This file
 ├── requirements.txt       # Python dependencies
 ├── sample_portfolio.csv   # Example portfolio for testing
-├── scripts/
-│   ├── parse_portfolio.py # CSV/Excel parsing (E-Trade, Schwab, generic)
-│   ├── market_data.py     # Yahoo Finance downloads + pickle caching
-│   ├── macro_analysis.py  # FRED economic indicators
-│   ├── optimize.py        # pyportfolioopt mean-variance optimization
-│   ├── schemas.py         # Pydantic v2 validation schemas
-│   ├── visualize.py       # matplotlib chart generation
-│   └── report.py          # Markdown report assembly
+├── scripts/               # Thin proxy -- redirects to skill scripts
+│   └── __init__.py        # Preflight check + import redirection
+├── .claude/
+│   └── skills/
+│       └── portfolio-analysis/  # The skill (source of truth)
+│           ├── SKILL.md         # Full workflow instructions
+│           ├── scripts/         # All Python source code
+│           │   ├── parse_portfolio.py
+│           │   ├── market_data.py
+│           │   ├── macro_analysis.py
+│           │   ├── optimize.py
+│           │   ├── schemas.py
+│           │   ├── visualize.py
+│           │   └── report.py
+│           ├── assets/          # Sample data
+│           ├── evals/           # Skill evaluation definitions
+│           └── references/      # Narrative generation guide
 ├── tests/                 # Test suite (pytest)
 ├── data_cache/            # (gitignored) Pickle cache for API data
 └── output/                # (gitignored) Generated reports and charts

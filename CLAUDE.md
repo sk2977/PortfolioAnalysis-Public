@@ -1,10 +1,8 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Overview
 
-Portfolio optimization and US macro analysis tool. Claude orchestrates the pipeline -- Python scripts in `scripts/` handle computation; Claude handles user interaction, data interpretation, and narrative generation. No Anthropic API key needed.
+Portfolio optimization and US macro analysis tool powered by a Claude Code skill. Python scripts in `.claude/skills/portfolio-analysis/scripts/` handle computation; Claude handles user interaction, data interpretation, and narrative generation. No Anthropic API key needed.
 
 ## Commands
 
@@ -18,23 +16,7 @@ python -m pytest tests/ -v
 
 # Run a single test file
 python -m pytest tests/test_stab.py -v
-
-# Run a specific test
-python -m pytest tests/test_stab.py::test_cache_warn_on_failure -v
 ```
-
-## Architecture
-
-**Claude-as-orchestrator pattern**: This is NOT a standalone CLI app. Claude reads CLAUDE.md, follows the phased workflow below, executes Python code blocks via tool use, and presents results conversationally. The scripts are libraries, not entry points.
-
-**Data flow**: CSV/text input -> `parse_portfolio` -> `market_data` (yfinance + pickle cache) -> `macro_analysis` (FRED economic indicators) -> `optimize` (pyportfolioopt) -> `schemas` (Pydantic validation) -> Claude generates narratives -> `visualize` (matplotlib PNGs) -> `report` (markdown assembly)
-
-**Key design decisions**:
-- Three expected return methods (CAPM, Mean Historical, EMA) weighted 34/33/33 and optimized independently, then combined
-- Ledoit-Wolf covariance shrinkage for robustness
-- Pydantic schemas validate at integration points only ("wrap, don't rewrite" -- pipeline functions return plain dicts)
-- `data_cache/` stores pickle files with 4-hour TTL; `output/` stores charts and reports (both gitignored)
-- yfinance downloads use 3-second delays between tickers to avoid rate limiting
 
 ## Environment
 
@@ -42,305 +24,21 @@ python -m pytest tests/test_stab.py::test_cache_warn_on_failure -v
 - Windows + Mac compatible
 - No Unicode emojis in console output -- use `[OK]`, `[ERROR]`, `[WARN]` etc.
 - All file I/O uses `encoding='utf-8'`
-- No Anthropic API key needed -- you (Claude) ARE the AI layer
 
 ## Workflow
 
-### Phase 1: Portfolio Input
+This project uses the **portfolio-analysis** skill at `.claude/skills/portfolio-analysis/SKILL.md`. Invoke it whenever the user wants to analyze, optimize, or rebalance a portfolio. The skill handles the full 7-phase pipeline: parsing, configuration, data download, optimization, validation, visualization, and report generation.
 
-Ask the user how they want to provide their portfolio:
+**Auto-run (Cowork mode)**: If the user provides a CSV/XLSX file or pastes portfolio holdings without explicit configuration instructions, invoke the skill with these defaults and skip the 6 configuration questions:
+- Risk tolerance: moderate
+- Max allocation: 15%, Min allocation: 0%
+- No guaranteed tickers or exclusions
+- Benchmark: VTI
 
-**Option A -- CSV file**: User provides a CSV path. Run:
-```python
-from scripts.parse_portfolio import parse_csv
-portfolio = parse_csv("path/to/file.csv", exclude_tickers=[])
-```
-Supported formats: Generic (Symbol,Shares,Price), E-Trade export, Schwab export.
+The user can request changes or re-run with custom settings afterward.
 
-**Option B -- Text input**: User describes holdings in plain text (e.g., "50% VTI, 30% BND, 20% QQQ"). Extract tickers and weights yourself, then validate:
-```python
-from scripts.parse_portfolio import validate_tickers
-result = validate_tickers(["VTI", "BND", "QQQ"])
-```
-Build the portfolio dict manually:
-```python
-import pandas as pd
-portfolio = {
-    'tickers': ['VTI', 'BND', 'QQQ'],
-    'allocations': pd.Series([0.50, 0.30, 0.20], index=['VTI', 'BND', 'QQQ']),
-    'raw_data': pd.DataFrame({'ticker': ['VTI', 'BND', 'QQQ'], 'allocation': [0.50, 0.30, 0.20]}),
-    'format_detected': 'user_input'
-}
-```
+## Architecture
 
-**Option C -- Excel file**: User provides a .xlsx path. Run:
-```python
-from scripts.parse_portfolio import parse_excel
-portfolio = parse_excel("path/to/file.xlsx", exclude_tickers=[])
-```
-Supported formats: Generic (Symbol,Shares,Price), Schwab export. E-Trade Excel is experimental (falls back to generic parser).
+**Data flow**: User input -> `parse_portfolio` -> `market_data` (yfinance + pickle cache) -> `macro_analysis` (FRED indicators) -> `optimize` (pyportfolioopt, 3 return methods weighted 34/33/33) -> `schemas` (Pydantic validation) -> Claude generates narratives -> `visualize` (matplotlib PNGs) -> `report` (markdown assembly)
 
-After parsing, show the user a table of their holdings and ask:
-1. "Does this look correct? Any tickers to exclude?"
-2. Apply any exclusions and re-normalize weights.
-
-If the user specified include_tickers, verify all are present in the portfolio:
-```python
-missing = [t for t in config.get('include_tickers', []) if t not in portfolio['tickers']]
-if missing:
-    print(f"  [WARN] Include tickers not in portfolio: {missing}")
-    print("  These will be added to the download list but won't have current allocation data.")
-```
-
-### Phase 2: Configuration
-
-**CRITICAL: You MUST ask ALL 6 questions below. Ask them ONE AT A TIME. Wait for the user's answer before asking the next question. Do NOT skip any question. Do NOT combine multiple questions into one message. Do NOT proceed to Phase 3 until all 6 questions have been asked and answered.**
-
-After the user confirms their portfolio in Phase 1, begin with Question 1. After they answer, ask Question 2. Continue until all 6 are done.
-
-**Question 1 of 6 -- Risk tolerance:**
-> "How would you describe your risk tolerance?
-> - Conservative: Lower risk, prioritizes capital preservation
-> - Moderate: Balanced risk/return
-> - Aggressive: Higher risk for higher returns"
-
-**Question 2 of 6 -- Maximum allocation per holding:**
-> "What is the maximum allocation you want for any single holding? (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom percentage)"
-
-**Question 3 of 6 -- Minimum allocation per holding:**
-> "Would you like to set a minimum allocation per holding to prevent the optimizer from concentrating into just a few stocks? (Default: 0% -- the optimizer can drop holdings entirely. Common choices: 1-2% to keep all holdings)"
-
-**Question 4 of 6 -- Guaranteed tickers:**
-> "Are there any tickers you want to guarantee appear in the optimized portfolio? (They will receive a minimum 1% allocation)"
-
-**Question 5 of 6 -- Benchmark:**
-> "Which benchmark would you like to compare against? (Default: VTI -- total US market)"
-
-**Question 6 of 6 -- Exclusions:**
-> "Are there any tickers you want to exclude from the optimized portfolio?"
-
-After all 6 answers are collected, apply the configuration:
-
-```python
-from scripts.optimize import get_default_config
-config = get_default_config("moderate")  # or "conservative" / "aggressive" per Q1
-
-# Q2: Max allocation
-config['max_weight'] = 0.20  # user's answer
-
-# Q3: Min allocation (prevents concentration into few stocks)
-config['min_weight'] = 0.01  # user's answer (0.0 if they said no/default)
-# Note: min_weight x number_of_holdings must be <= 100%
-
-# Q4: Guaranteed tickers
-config['include_tickers'] = ['AAPL', 'MSFT']  # user's answer ([] if none)
-config['include_floor'] = 0.01
-
-# Q5: Benchmark
-config['benchmark'] = 'SPY'  # user's answer ('VTI' if default)
-
-# Q6: Exclusions -- remove from ticker list and re-normalize weights
-exclude = ['TSLA', 'COIN']  # user's answer ([] if none)
-if exclude:
-    portfolio['tickers'] = [t for t in portfolio['tickers'] if t not in exclude]
-    portfolio['allocations'] = portfolio['allocations'].drop(exclude, errors='ignore')
-    portfolio['allocations'] = portfolio['allocations'] / portfolio['allocations'].sum()
-```
-
-**Feasibility guard**: After applying exclusions, check that `max_weight * len(portfolio['tickers']) >= 1.0`. If not, the optimizer cannot produce weights summing to 100%. Auto-adjust: `config['max_weight'] = max(config['max_weight'], 1.0 / len(portfolio['tickers']) + 0.05)` and inform the user of the adjustment.
-
-Available optimization methods: `max_sharpe`, `min_volatility`, `max_quadratic_utility`
-
-### Phase 3: Data Download
-
-```python
-from scripts.market_data import download_prices
-market = download_prices(
-    portfolio['tickers'],
-    start_date='2020-01-01',  # Adjust if user requests different period
-    benchmark=config.get('benchmark', 'VTI')
-)
-```
-
-Report any failed tickers to the user. If critical tickers failed, ask if they want to retry or exclude them.
-
-### Phase 4: Analysis
-
-Run economic indicators and portfolio optimization:
-
-```python
-from scripts.macro_analysis import get_macro_context
-macro = get_macro_context()  # Fetches 8 FRED indicators (rates, employment, inflation, growth)
-```
-
-```python
-from scripts.optimize import optimize_portfolio
-results = optimize_portfolio(
-    market['prices'],
-    market['benchmark'],
-    portfolio['allocations'],
-    config
-)
-```
-
-### Phase 4.5: Structured Validation
-
-After running macro analysis and optimization, validate outputs against Pydantic schemas. This normalizes numpy/pandas types to JSON-safe Python natives and catches structural mismatches early.
-
-**Code block 1 -- Validate macro context:**
-```python
-from scripts.schemas import MacroContext
-macro_validated = MacroContext.model_validate(macro)
-# macro_validated.indicators['ten_year'].value is now a Python float (or None)
-# macro_validated.model_dump() is JSON-serializable
-```
-
-**Code block 2 -- Validate optimization results:**
-```python
-from scripts.schemas import AllocationComparison, PortfolioRecommendation, PerformanceMetrics
-comp_df = results['comparison']
-alloc_validated = AllocationComparison.model_validate({
-    'current': comp_df['Current'],
-    'optimal': comp_df['Optimal'],
-    'difference': comp_df['Difference'],
-})
-
-rec_validated = PortfolioRecommendation.model_validate({
-    'risk_tolerance': config['risk_tolerance'],
-    'optimization_method': config['optimization_method'],
-    'optimal_allocations': results['optimal_allocations'],
-    'performance_current': results['performance']['current'],
-    'performance_optimal': results['performance']['optimal'],
-})
-```
-
-**Code block 3 -- Generate structured output schema for Claude:**
-```python
-import json
-from scripts.schemas import PortfolioRecommendation
-schema = PortfolioRecommendation.model_json_schema()
-print(json.dumps(schema, indent=2))
-# Claude: produce a JSON block conforming to this schema, then validate:
-# validated = PortfolioRecommendation.model_validate_json(json_block)
-```
-
-Note on JSON fencing: If Claude's JSON block is wrapped in triple-backtick fencing, strip it first: `json_str = json_block.strip().removeprefix('```json').removesuffix('```').strip()`
-
-### Phase 5: Visualization
-
-Generate all charts:
-
-```python
-from scripts.visualize import (
-    plot_allocation_comparison,
-    plot_efficient_frontier,
-    plot_correlation_matrix,
-    plot_macro_primary,
-    plot_macro_secondary,
-    plot_price_history
-)
-
-charts = []
-charts.append(plot_allocation_comparison(results['comparison']))
-charts.append(plot_efficient_frontier(
-    results['returns_dict'], results['cov_matrix'],
-    results['method_results'], portfolio['allocations'],
-    results['optimal_allocations'], results['config']
-))
-charts.append(plot_correlation_matrix(results['cov_matrix']))
-charts.append(plot_price_history(market['prices']))
-
-macro_chart1 = plot_macro_primary(macro)
-if macro_chart1:
-    charts.append(macro_chart1)
-macro_chart2 = plot_macro_secondary(macro)
-if macro_chart2:
-    charts.append(macro_chart2)
-```
-
-### Phase 5.5: Qualitative Narrative
-
-Before calling generate_report(), generate three narrative strings. You (Claude) produce these by reading the structured data -- no API call needed.
-
-**1. Macro narrative (macro_narrative):**
-Read macro['indicators'] and macro['interpretation'].
-Write 2-3 sentences interpreting the current economic environment in plain language.
-Reference specific indicator values (interest rates, unemployment, inflation YoY) from the data.
-
-Example style:
-> "With the Fed Funds rate at 4.09% and 10Y Treasury at 4.14%, the yield curve is nearly flat. Unemployment at 4.3% suggests a moderately tight labor market, while CPI inflation running at 3.0% YoY remains above the Fed's 2% target."
-
-**2. Holding commentary (holding_commentary):**
-From results['comparison'], identify tickers where abs(Difference) > 0.05 (5 percentage points).
-For each, write one sentence explaining the direction and magnitude of the recommended change.
-Return as a dict: {"TICKER": "commentary sentence"}.
-Only include material changes -- skip tickers with smaller shifts.
-
-Do NOT use investment advice language ("you should buy/sell"). Use observational language ("the optimizer suggests increasing", "the model recommends reducing").
-
-**3. Macro-portfolio synthesis (macro_portfolio_note):**
-This is the most important narrative. Read BOTH macro['indicators'] AND results['comparison'] together.
-Write 2-4 sentences connecting the current economic environment to the specific allocation recommendations.
-
-Consider:
-- How do interest rate levels affect bond-heavy vs equity-heavy tilts?
-- Does the unemployment/inflation picture favor defensive or growth holdings?
-- Are the optimizer's largest recommended changes consistent with the macro backdrop?
-- Are there any contradictions worth flagging (e.g., optimizer increases equity exposure despite elevated rates)?
-
-Example style:
-> "With the Fed Funds rate at 4.09% and 10Y Treasury at 4.14%, fixed income yields remain attractive. The optimizer's recommendation to increase BND from 15% to 25% aligns with this rate environment. However, the simultaneous increase in QQQ exposure introduces growth sensitivity that could underperform if rates stay elevated."
-
-Do NOT use investment advice language ("you should buy/sell"). Use observational language ("the optimizer's tilt toward X is consistent with...", "this allocation may face headwinds if...").
-
-**4. Method spread note (method_spread_note):**
-From results['returns_dict'], compare CAPM, mean historical, and EMA expected returns per ticker.
-If any ticker's spread (max - min across methods) exceeds 5 percentage points (0.05):
-
-Set method_spread_note to a string like:
-> "[TICKER]'s expected return ranges from X.X% (CAPM) to Y.Y% (EMA) -- a spread of Z.Zpp. Treat this ticker's recommendation as lower confidence."
-
-If multiple tickers exceed the threshold, mention each.
-If no ticker exceeds the threshold, set method_spread_note = None.
-
-Store all four as Python variables for the next step.
-
-### Phase 6: Report
-
-Generate and present the report:
-
-```python
-from scripts.report import generate_report
-report_md = generate_report(results, macro, portfolio, charts,
-                             macro_narrative=macro_narrative,
-                             holding_commentary=holding_commentary,
-                             macro_portfolio_note=macro_portfolio_note,
-                             method_spread_note=method_spread_note)
-print(report_md)
-```
-
-Present the key findings to the user in a clear narrative:
-1. Macro context (current economic environment)
-2. Portfolio optimization results (current vs optimal)
-3. Top rebalancing actions
-4. Macro-portfolio synthesis (how macro conditions relate to the recommended changes)
-5. Implementation priority
-6. Confidence indicators (method spread warnings)
-
-### Phase 7: Follow-up
-
-Offer the user options:
-- "Would you like to adjust any constraints and re-run?"
-- "Want to explore a different risk tolerance?"
-- "Interested in diving deeper into any specific holding?"
-- "Would you like to exclude additional tickers and re-optimize?"
-
-## Important Notes
-
-- Always wrap script calls in try/except and report errors clearly
-- If yfinance downloads are slow, reassure the user (3-sec delay between tickers is normal)
-- The `data_cache/` directory stores pickle files for faster re-runs
-- Charts are saved to `output/` directory
-- The sample_portfolio.csv can be used for testing
-- All optimization uses Ledoit-Wolf covariance shrinkage for robustness
-- Three expected return methods (CAPM, Mean Historical, EMA) are weighted 34/33/33
+All source code lives in `.claude/skills/portfolio-analysis/scripts/`. The top-level `scripts/` package is a thin proxy that redirects imports there (so tests can use `from scripts.X import ...`).
