@@ -97,9 +97,9 @@ if missing:
 
 ### Phase 2: Configuration
 
-**Auto-run mode**: If the user provided portfolio data without asking for customization (e.g., just dropped a CSV or said "analyze this"), skip all 6 questions and use moderate defaults: risk_tolerance=moderate, max_weight=0.15, min_weight=0.0, include_tickers=[], benchmark='VTI', no exclusions. Proceed directly to Phase 3. Offer to re-run with custom settings in Phase 7.
+**Quick mode**: Only if the user explicitly asks to skip configuration (e.g., "use defaults", "quick run", "just run it"), use moderate defaults: risk_tolerance=moderate, max_weight=0.15, min_weight=0.0, include_tickers=[], benchmark='VTI', no exclusions. Proceed directly to Phase 3.
 
-**Interactive mode (default)**: Ask ALL 6 questions below. Ask them ONE AT A TIME. Wait for the user's answer before asking the next question. Do NOT skip any question. Do NOT combine multiple questions into one message. Do NOT proceed to Phase 3 until all 6 questions have been asked and answered.
+**Default behavior**: Ask ALL 6 questions below. Ask them ONE AT A TIME. Wait for the user's answer before asking the next question. Do NOT skip any question. Do NOT combine multiple questions into one message. Do NOT proceed to Phase 3 until all 6 questions have been asked and answered.
 
 After the user confirms their portfolio in Phase 1, begin with Question 1. After they answer, ask Question 2. Continue until all 6 are done.
 

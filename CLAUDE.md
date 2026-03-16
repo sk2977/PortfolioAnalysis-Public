@@ -26,4 +26,4 @@ python -m pytest tests/ -v
 
 Invoke the **portfolio-analysis** skill whenever the user wants to analyze, optimize, or rebalance a portfolio. The skill handles everything: parsing, configuration, data download, optimization, validation, visualization, and report generation.
 
-**Auto-run (Cowork mode)**: If the user provides a CSV/XLSX file or pastes portfolio holdings without explicit configuration instructions, invoke the skill with moderate defaults and skip the 6 configuration questions. The user can customize and re-run afterward.
+**Quick mode**: If the user explicitly asks to skip configuration (e.g., "use defaults", "quick run", "just run it"), use moderate defaults and skip the 6 configuration questions. Otherwise, always ask all 6 questions.
