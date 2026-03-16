@@ -29,10 +29,8 @@ env/
 .DS_Store
 Thumbs.db
 
-# Claude Code local config (keep skills/ for public skill distribution)
-.claude/*
-!.claude/skills/
-!.claude/settings.json
+# Claude Code local config
+.claude/settings.local.json
 .claude/skills/*-workspace/
 
 # Development planning docs
