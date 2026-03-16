@@ -1,14 +1,159 @@
 """
 Report Generator
 ================
-Generates a markdown summary report from optimization and economic indicator results.
+Generates a self-contained HTML report (with base64-embedded chart images)
+from optimization and economic indicator results. Also saves a markdown copy.
 """
 
+import base64
 import datetime
+import re
 from pathlib import Path
 
 
 OUTPUT_DIR = 'output'
+
+
+# ---------------------------------------------------------------------------
+# HTML helpers
+# ---------------------------------------------------------------------------
+
+def _embed_chart_as_base64(chart_path):
+    """Read a PNG file and return a data URI string. Returns None on failure."""
+    try:
+        with open(chart_path, 'rb') as f:
+            encoded = base64.b64encode(f.read()).decode('ascii')
+        return f'data:image/png;base64,{encoded}'
+    except (FileNotFoundError, PermissionError, OSError) as e:
+        print(f"  [WARN] Could not embed {chart_path}: {e}")
+        return None
+
+
+def _markdown_to_html(md_text, chart_data_uris=None):
+    """
+    Convert markdown report text to a self-contained HTML document.
+
+    Parameters
+    ----------
+    md_text : str
+        The markdown report content.
+    chart_data_uris : dict or None
+        Mapping of chart filename (e.g. 'allocation_comparison.png') to
+        base64 data URI string.
+
+    Returns
+    -------
+    str
+        Complete HTML document string.
+    """
+    if chart_data_uris is None:
+        chart_data_uris = {}
+
+    lines = md_text.split('\n')
+    html_parts = []
+    in_table = False
+    table_rows = []
+
+    def flush_table():
+        nonlocal table_rows, in_table
+        if not table_rows:
+            in_table = False
+            return
+        html_parts.append('<table>')
+        for i, row in enumerate(table_rows):
+            cells = [c.strip() for c in row.strip('|').split('|')]
+            # Skip separator rows (e.g. |---|---|)
+            if all(set(c.strip()) <= set('-: ') for c in cells):
+                continue
+            tag = 'th' if i == 0 else 'td'
+            html_parts.append(
+                '<tr>' + ''.join(f'<{tag}>{c}</{tag}>' for c in cells) + '</tr>'
+            )
+        html_parts.append('</table>')
+        table_rows = []
+        in_table = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Table rows
+        if stripped.startswith('|') and stripped.endswith('|'):
+            if not in_table:
+                in_table = True
+                table_rows = []
+            table_rows.append(stripped)
+            continue
+        elif in_table:
+            flush_table()
+
+        # Headers
+        if stripped.startswith('### '):
+            html_parts.append(f'<h3>{stripped[4:]}</h3>')
+        elif stripped.startswith('## '):
+            html_parts.append(f'<h2>{stripped[3:]}</h2>')
+        elif stripped.startswith('# '):
+            html_parts.append(f'<h1>{stripped[2:]}</h1>')
+        # Images -- replace with embedded base64
+        elif '![' in stripped:
+            match = re.search(r'!\[([^\]]*)\]\(([^)]+)\)', stripped)
+            if match:
+                alt = match.group(1)
+                img_path = match.group(2)
+                filename = Path(img_path).name
+                data_uri = chart_data_uris.get(filename)
+                if data_uri:
+                    html_parts.append(
+                        f'<div class="chart">'
+                        f'<img src="{data_uri}" alt="{alt}">'
+                        f'<p class="caption">{alt}</p></div>'
+                    )
+                else:
+                    html_parts.append(f'<p>[Image not available: {filename}]</p>')
+        # List items
+        elif stripped.startswith('- '):
+            content = stripped[2:]
+            content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', content)
+            html_parts.append(f'<li>{content}</li>')
+        # Horizontal rule
+        elif stripped == '---':
+            html_parts.append('<hr>')
+        # Non-empty text
+        elif stripped:
+            content = re.sub(r'\*\*([^*]+)\*\*', r'<strong>\1</strong>', stripped)
+            html_parts.append(f'<p>{content}</p>')
+
+    if in_table:
+        flush_table()
+
+    body = '\n'.join(html_parts)
+
+    return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Portfolio Analysis Report</title>
+<style>
+  body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         max-width: 900px; margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.6; }}
+  h1 {{ border-bottom: 2px solid #333; padding-bottom: 8px; }}
+  h2 {{ color: #2c3e50; margin-top: 32px; }}
+  h3 {{ color: #34495e; }}
+  table {{ border-collapse: collapse; width: 100%; margin: 16px 0; }}
+  th, td {{ border: 1px solid #ddd; padding: 8px 12px; text-align: left; }}
+  th {{ background: #f5f5f5; font-weight: 600; }}
+  tr:nth-child(even) {{ background: #fafafa; }}
+  .chart {{ margin: 24px 0; text-align: center; }}
+  .chart img {{ max-width: 100%; height: auto; border: 1px solid #eee; border-radius: 4px; }}
+  .caption {{ font-size: 0.9em; color: #666; margin-top: 4px; }}
+  li {{ margin: 4px 0; }}
+  hr {{ margin: 32px 0; border: none; border-top: 1px solid #ccc; }}
+  p {{ margin: 8px 0; }}
+</style>
+</head>
+<body>
+{body}
+</body>
+</html>'''
 
 
 def _compute_method_spread(returns_dict, threshold=0.05):
@@ -278,11 +423,24 @@ def generate_report(optimization_results, macro_context, portfolio_info,
 
     report = '\n'.join(lines)
 
-    # Save to file
+    # Save markdown
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    report_path = str(Path(output_dir) / 'report.md')
-    with open(report_path, 'w', encoding='utf-8') as f:
+    md_path = str(Path(output_dir) / 'report.md')
+    with open(md_path, 'w', encoding='utf-8') as f:
         f.write(report)
-    print(f"  [OK] Report saved: {report_path}")
+    print(f"  [OK] Markdown saved: {md_path}")
+
+    # Build and save self-contained HTML with embedded chart images
+    chart_data_uris = {}
+    for path in chart_paths:
+        data_uri = _embed_chart_as_base64(path)
+        if data_uri:
+            chart_data_uris[Path(path).name] = data_uri
+
+    html_report = _markdown_to_html(report, chart_data_uris)
+    html_path = str(Path(output_dir) / 'report.html')
+    with open(html_path, 'w', encoding='utf-8') as f:
+        f.write(html_report)
+    print(f"  [OK] HTML report saved: {html_path}")
 
     return report

@@ -190,6 +190,60 @@ def test_backward_compat():
 
 
 # ---------------------------------------------------------------------------
+# HTML report output
+# ---------------------------------------------------------------------------
+
+def test_html_report_created(tmp_path):
+    """generate_report() produces an HTML file with embedded base64 chart images."""
+    from scripts.report import generate_report
+
+    results, macro, portfolio = _minimal_inputs()
+
+    # Create a small dummy PNG (1x1 pixel)
+    import struct, zlib
+    def _make_tiny_png():
+        raw = b'\x00\x00\x00\x00'  # 1 pixel RGBA
+        compressed = zlib.compress(raw)
+        def chunk(ctype, data):
+            c = ctype + data
+            return struct.pack('>I', len(data)) + c + struct.pack('>I', zlib.crc32(c) & 0xffffffff)
+        return (b'\x89PNG\r\n\x1a\n'
+                + chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 6, 0, 0, 0))
+                + chunk(b'IDAT', compressed)
+                + chunk(b'IEND', b''))
+
+    chart_file = tmp_path / 'test_chart.png'
+    chart_file.write_bytes(_make_tiny_png())
+
+    out_dir = str(tmp_path / 'output')
+    report = generate_report(results, macro, portfolio,
+                             chart_paths=[str(chart_file)],
+                             output_dir=out_dir)
+
+    html_path = Path(out_dir) / 'report.html'
+    assert html_path.exists(), "HTML report file should be created"
+
+    html_content = html_path.read_text(encoding='utf-8')
+    assert 'data:image/png;base64,' in html_content, "HTML should contain embedded base64 images"
+    assert '<!DOCTYPE html>' in html_content, "HTML should be a complete document"
+    assert 'Portfolio Analysis Report' in html_content
+
+
+def test_html_report_no_charts(tmp_path):
+    """generate_report() produces valid HTML even with no chart paths."""
+    from scripts.report import generate_report
+
+    results, macro, portfolio = _minimal_inputs()
+    out_dir = str(tmp_path / 'output')
+    generate_report(results, macro, portfolio, chart_paths=[], output_dir=out_dir)
+
+    html_path = Path(out_dir) / 'report.html'
+    assert html_path.exists()
+    html_content = html_path.read_text(encoding='utf-8')
+    assert '<!DOCTYPE html>' in html_content
+
+
+# ---------------------------------------------------------------------------
 # COWK-03: README Cowork setup section
 # ---------------------------------------------------------------------------
 

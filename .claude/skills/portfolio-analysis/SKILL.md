@@ -285,6 +285,12 @@ report_md = generate_report(results, macro, portfolio, charts,
 print(report_md)
 ```
 
+`generate_report()` produces two files:
+- `output/report.html` -- the **primary deliverable**, a self-contained HTML file with all chart images embedded as base64 data URIs
+- `output/report.md` -- a markdown copy for reference
+
+When sharing results with the user, link to the HTML file.
+
 Present key findings to the user in a clear narrative:
 1. Macro context (current economic environment)
 2. Portfolio optimization results (current vs optimal)
