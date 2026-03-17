@@ -108,13 +108,13 @@ After the user confirms their portfolio in Phase 1, begin with Question 1. After
 > - Aggressive: Higher risk for higher returns"
 
 **Question 2 of 6 -- Maximum allocation per holding:**
-> "What is the maximum allocation you want for any single holding? (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom percentage)"
+> "What is the maximum allocation you want for any single holding? This caps position size to control concentration risk. (Default: 10% conservative, 15% moderate, 25% aggressive -- or specify a custom percentage)"
 
 **Question 3 of 6 -- Minimum allocation per holding:**
-> "Would you like to set a minimum allocation per holding to prevent the optimizer from concentrating into just a few stocks? (Default: 0% -- the optimizer can drop holdings entirely. Common choices: 1-2% to keep all holdings)"
+> "Would you like to set a minimum allocation per holding to ensure every holding keeps at least a small position? Without a minimum, the optimizer may drop holdings entirely. (Default: 0%. Common choices: 1-2% to keep all holdings)"
 
 **Question 4 of 6 -- Guaranteed tickers:**
-> "Are there any tickers you want to guarantee appear in the optimized portfolio? (They will receive a minimum 1% allocation)"
+> "Are there any tickers you want to guarantee appear in the optimized portfolio? (These tickers will be kept even if the optimizer would otherwise drop them, with at least a 1% allocation)"
 
 **Question 5 of 6 -- Benchmark:**
 > "Which benchmark would you like to compare against? (Default: VTI -- total US market)"
@@ -131,7 +131,7 @@ config = get_default_config("moderate")  # or "conservative" / "aggressive" per 
 # Q2: Max allocation
 config['max_weight'] = 0.20  # user's answer
 
-# Q3: Min allocation (prevents concentration into few stocks)
+# Q3: Min allocation (ensures every holding keeps at least a small position)
 config['min_weight'] = 0.01  # user's answer (0.0 if they said no/default)
 # Note: min_weight x number_of_holdings must be <= 100%
 
@@ -152,7 +152,7 @@ if exclude:
 
 **Feasibility guard**: After applying exclusions, check that `max_weight * len(portfolio['tickers']) >= 1.0`. If not, the optimizer cannot produce weights summing to 100%. Auto-adjust: `config['max_weight'] = max(config['max_weight'], 1.0 / len(portfolio['tickers']) + 0.05)` and inform the user of the adjustment.
 
-Available optimization methods: `max_sharpe`, `min_volatility`, `max_quadratic_utility`
+Available optimization methods: `max_sharpe` (Maximum Sharpe Ratio), `min_volatility` (Minimum Volatility), `max_quadratic_utility` (Maximum Utility, Quadratic)
 
 ### Phase 3: Data Download
 
