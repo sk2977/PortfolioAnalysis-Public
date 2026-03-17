@@ -258,7 +258,7 @@ def generate_report(optimization_results, macro_context, portfolio_info,
                 f"Results may vary across estimation methods."
             )
 
-    now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    now = datetime.datetime.now().strftime('%B %d, %Y %H:%M')
     config = optimization_results.get('config', {})
     perf = optimization_results.get('performance', {})
     comparison = optimization_results.get('comparison')
@@ -275,7 +275,13 @@ def generate_report(optimization_results, macro_context, portfolio_info,
     lines.append(f"- **Holdings**: {len(portfolio_info.get('tickers', []))} securities")
     lines.append(f"- **Securities**: {', '.join(portfolio_info.get('tickers', []))}")
     lines.append(f"- **Risk Tolerance**: {config.get('risk_tolerance', 'N/A')}")
-    lines.append(f"- **Optimization Method**: {config.get('optimization_method', 'N/A')}")
+    method_display = {
+        'max_sharpe': 'Maximum Sharpe Ratio',
+        'min_volatility': 'Minimum Volatility',
+        'max_quadratic_utility': 'Maximum Utility (Quadratic)',
+    }
+    raw_method = config.get('optimization_method', 'N/A')
+    lines.append(f"- **Optimization Method**: {method_display.get(raw_method, raw_method)}")
     lines.append(f"- **Max Weight Per Security**: {config.get('max_weight', 0):.0%}")
     lines.append(f"")
 
@@ -284,8 +290,8 @@ def generate_report(optimization_results, macro_context, portfolio_info,
     lines.append(f"")
     indicators = macro_context.get('indicators', {})
     if indicators:
-        lines.append(f"| Indicator | Value | YoY% | Date |")
-        lines.append(f"|-----------|-------|------|------|")
+        lines.append(f"| Indicator | Value | Change (YoY) | Date |")
+        lines.append(f"|-----------|-------|--------------|------|")
         indicator_labels = {
             'bbb_yield': 'BBB Corporate Bonds',
             'fed_funds': 'Fed Funds Rate',
@@ -321,13 +327,15 @@ def generate_report(optimization_results, macro_context, portfolio_info,
         vol_diff = opt.get('volatility', 0) - curr.get('volatility', 0)
         sr_diff = opt.get('sharpe', 0) - curr.get('sharpe', 0)
 
-        lines.append(f"| Expected Return | {curr.get('return', 0):.2%} | "
+        lines.append(f"| Expected Return* | {curr.get('return', 0):.2%} | "
                      f"{opt.get('return', 0):.2%} | {ret_diff:+.2%} |")
         lines.append(f"| Volatility | {curr.get('volatility', 0):.2%} | "
                      f"{opt.get('volatility', 0):.2%} | {vol_diff:+.2%} |")
         lines.append(f"| Sharpe Ratio | {curr.get('sharpe', 0):.3f} | "
                      f"{opt.get('sharpe', 0):.3f} | {sr_diff:+.3f} |")
     lines.append(f"")
+    lines.append(f"*Annualized expected return, blended across CAPM, historical mean, "
+                 f"and exponential moving average (weighted ~34/33/33).")
 
     # Allocation Comparison
     if comparison is not None:
